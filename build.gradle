@@ -1,0 +1,20 @@
+apply plugin: 'java'
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile group: 'commons-io', name: 'commons-io', version: '2.5'
+  compile group: 'org.yaml', name: 'snakeyaml', version: '1.18'
+  compile group: 'com.ibm.icu', name: 'icu4j', version: '59.1'
+  compile group: 'org.ahocorasick', name: 'ahocorasick', version: '0.4.0'
+  compile group: 'com.atilika.kuromoji', name: 'kuromoji-unidic', version: '0.9.0'
+  compile group: 'com.github.riccardove.easyjasub', name: 'subtitleConvert', version: '1.0.2'
+}
+
+jar {
+  manifest {
+    attributes 'Main-Class': 'AppMain'
+  }
+}
