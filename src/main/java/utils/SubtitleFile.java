@@ -54,7 +54,7 @@ public class SubtitleFile {
     public void readFromSRT(File f) throws IOException, FatalParsingException {
         // Read subtitle file contents
         TimedTextFileFormat ttff = new FormatSRT();
-        tto = ttff.parseFile(f.getName(), FileManager.getUnicodeFileContents(f));
+        tto = ttff.parseFile(f.getName(), FileManager.getUtf8Stream(f));
         tto.styling = substyles;
         if(tto.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {
             System.out.println("\n" + tto.warnings);

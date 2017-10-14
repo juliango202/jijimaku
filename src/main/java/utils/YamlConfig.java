@@ -1,26 +1,30 @@
 package utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
-
+import error.UnexpectedError;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 
 
 public class YamlConfig {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private Map<String, Object> configMap = null;
 
 	public YamlConfig(String configFilePath) {
         try {
             Yaml yaml = new Yaml();
-            InputStream stream = FileManager.getUnicodeFileContents(new File(configFilePath));
+            InputStream stream = FileManager.getUtf8Stream(new File(configFilePath));
             configMap = (Map<String, Object>) yaml.load(stream);
         }
-        catch (IOException e) {
-            System.out.println("Problem reading YAML config: "+configFilePath);
-            e.printStackTrace();
-            System.exit(1);
+        catch (IOException exc) {
+          LOGGER.error("Problem reading YAML config {}", configFilePath);
+          LOGGER.debug("Exception details", exc);
+          throw new UnexpectedError();
         }
 	}
 
@@ -52,6 +56,6 @@ public class YamlConfig {
                     "Style: Default,Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
         }
     }
-	 
+
 }
 

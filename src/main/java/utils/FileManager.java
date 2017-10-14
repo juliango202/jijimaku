@@ -10,9 +10,10 @@ import java.io.*;
 // Utility class to manage file IO & encoding
 public class FileManager {
 
-    // Return an utf-8 inputstream for the file(convert encoding if necessary)
-    // Use icu4j as explained in http://userguide.icu-project.org/conversion/detection
-    public static InputStream getUnicodeFileContents(File f) throws IOException {
+    // Return an utf-8 inputstream for the file
+    // convert encoding if necessary, using http://userguide.icu-project.org/conversion/detection
+    // NOTE: this will load the entire file in memory
+    public static InputStream getUtf8Stream(File f) throws IOException {
 
         byte[] byteData = IOUtils.toByteArray(new FileInputStream(f));
 
@@ -25,7 +26,8 @@ public class FileManager {
         // TO DO => log file encoding => match.getName()
         byte[] unicodeByteData = unicodeData.getBytes( "UTF-8" );
 
-        // Must use BOMInputStream otherwise files with BOM will broke :((( => http://stackoverflow.com/questions/4897876/reading-utf-8-bom-marker
+        // Must use BOMInputStream otherwise files with BOM will broke :(((
+        // => http://stackoverflow.com/questions/4897876/reading-utf-8-bom-marker
         return new BOMInputStream( new ByteArrayInputStream( unicodeByteData ));
     }
 

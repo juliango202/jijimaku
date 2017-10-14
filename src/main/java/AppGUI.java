@@ -1,16 +1,24 @@
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.TextAreaOutputStream;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
 
 
+// Class to layout GUI components
 
+@SuppressWarnings("serial")
 public class AppGUI extends JFrame implements ActionListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private JButton searchBt, annotateBt, cleanupBt, logBt, quitBt;
+    private JButton searchBt, quitBt;
+    private JFileChooser fileChooser;
     private AppEventListener evtListener;
 
     /** Creates the reusable dialog. */
@@ -21,6 +29,8 @@ public class AppGUI extends JFrame implements ActionListener {
         pack();
         setVisible( true );
         evtListener = listener;
+        fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
     }
 
     /** Returns an ImageIcon, or null if the path was invalid. */
@@ -70,33 +80,18 @@ public class AppGUI extends JFrame implements ActionListener {
         menuBox.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
                 BorderFactory.createEmptyBorder(2, 2, 2, 2)));
 
-        // Add all the menu buttons
+        // Add the menu buttons
         Font menuFont = new Font("Arial", Font.PLAIN, 12);
+
         // SEARCH button ------------
         searchBt= new JButton("Search",createImageIcon("icon_search.png",  "search icon"));
         searchBt.addActionListener(this);
         searchBt.setFont(menuFont);
         menuBox.add(searchBt);
         menuBox.add(Box.createRigidArea(new Dimension(2, 0)));
-        // ANNOTATE button ------------
-        annotateBt = new JButton("Annotate",createImageIcon("icon_play.png",  "annotate icon"));
-        annotateBt.addActionListener(this);
-        annotateBt.setFont(menuFont);
-        menuBox.add(annotateBt);
-        menuBox.add(Box.createRigidArea(new Dimension(2, 0)));
-        // CLEANUP button ------------
-        cleanupBt = new JButton("Cleanup",createImageIcon("icon_bin.png",  "cleanup icon"));
-        cleanupBt.addActionListener(this);
-        cleanupBt.setFont(menuFont);
-        menuBox.add(cleanupBt);
-        menuBox.add(Box.createHorizontalGlue());
-        // LOG button ------------
-        logBt = new JButton("See log",createImageIcon("icon_log.png",  "log icon"));
-        logBt.addActionListener(this);
-        logBt.setFont(menuFont);
-        menuBox.add(logBt);
-        menuBox.add(Box.createRigidArea(new Dimension(2, 0)));
+
         // QUIT button ------------
+        menuBox.add(Box.createHorizontalGlue());
         quitBt = new JButton("Quit",createImageIcon("icon_exit.png",  "log icon"));
         quitBt.addActionListener(this);
         quitBt.setFont(menuFont);
@@ -108,24 +103,21 @@ public class AppGUI extends JFrame implements ActionListener {
     // ========================================================================
 
     // Enable / Disable interface buttons
-    public void setButtonsState(Boolean canSearch, Boolean canAnnotate, Boolean canClean, Boolean canLog) {
+    public void setReadyState(Boolean canSearch) {
         searchBt.setEnabled(canSearch);
-        annotateBt.setEnabled(canAnnotate);
-        cleanupBt.setEnabled(canClean);
-        logBt.setEnabled(canLog);
     }
 
     // Event management => exit the app if QUIT button is pressed, otherwise bubble the event to AppMain
     public void actionPerformed(ActionEvent e) {
-
         if(e.getSource() == quitBt) {
             dispose();
             System.exit(0);
+        } else if(e.getSource() == searchBt) {
+            fileChooser.showSaveDialog(null);
+            File file = fileChooser.getSelectedFile ();
+            LOGGER.debug("Selected directory: {}", file.getName());
+            evtListener.onAppEvent(AppEvent.SEARCH_BT_CLICK, null);
         }
-        else if(e.getSource() == searchBt) { evtListener.onAppEvent(AppEvent.SEARCH_BT_CLICK,null); }
-        else if(e.getSource() == annotateBt) { evtListener.onAppEvent(AppEvent.ANNOTATE_BT_CLICK,null); }
-        else if(e.getSource() == cleanupBt  ) { evtListener.onAppEvent(AppEvent.CLEANUP_BT_CLICK,null); }
-        else if(e.getSource() == logBt      ) { evtListener.onAppEvent(AppEvent.LOG_BT_CLICK,null); }
     }
 
 }

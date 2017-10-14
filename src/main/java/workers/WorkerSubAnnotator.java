@@ -1,9 +1,16 @@
+package workers;
+
 import langdictionary.JMDict;
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import error.SubsDictError;
+import error.UnexpectedError;
 import subtitleFile.*;
 
 import javax.swing.*;
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -15,10 +22,12 @@ import utils.YamlConfig;
 
 
 // Background task that annotates a subtitle file with words definition
-class WorkerSubAnnotator extends SwingWorker<Void, Object> {
+public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private List<String> subtitlesFilePaths;
-    private AppEventListener evtListener;
+    private InputStream jmdictIn;
+    private String configFile;
 
     private static final EnumSet<POSTag> POSTagsToIgnore = EnumSet.of(
         POSTag.PUNCTUATION,
@@ -31,14 +40,11 @@ class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         POSTag.SUFFIX
     );
 
-    WorkerSubAnnotator(List<String> files, AppEventListener listener) {
-        subtitlesFilePaths = files;
-        evtListener = listener;
+    public WorkerSubAnnotator(List<String> subtitlesFilePaths, InputStream jmdictIn, String configFile) {
+        this.subtitlesFilePaths = subtitlesFilePaths;
+        this.jmdictIn = jmdictIn;
+        this.configFile = configFile;
     }
-
-    // For now only SRT subtitles are supported
-    // but it should be fairly easy to add other formats when needed
-    public static final String[] VALID_SUBFILE_EXT = {"srt"};
 
     private JapaneseParser langParser = null;
     private JMDict dict = null;
@@ -52,7 +58,7 @@ class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         System.out.print( "Initializing parser and dictionary...");
 
         // Load configuration
-        YamlConfig config = new YamlConfig(AppConst.CONFIG_FILE);
+        YamlConfig config = new YamlConfig(configFile);
         System.out.print(".");
 
         // Load user list of words to ignore
@@ -62,7 +68,6 @@ class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         }
 
         // Initialize dictionary
-        InputStream jmdictIn = AppMain.class.getResourceAsStream(AppConst.JMDICT_FILE);
         dict = new JMDict(jmdictIn);
         dict.outDict();
         System.out.print( ".");
@@ -77,14 +82,13 @@ class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         System.out.println( "OK");
     }
 
-    private boolean isSupportedSubtitleFile(File f) {
-        return f.isFile() && Arrays.asList(VALID_SUBFILE_EXT).contains(FilenameUtils.getExtension( f.getName() ));
-    }
-
     // Return true if file was annotated, false otherwise
     private boolean annotateSubtitleFile(File f) throws IOException, FatalParsingException {
 
-        if(!isSupportedSubtitleFile(f)) throw new IllegalArgumentException("invalid SRT file: "+f.getName());
+        if(!FilenameUtils.getExtension(f.getName()).equals("srt")) {
+            LOGGER.error("invalid SRT file: {}", f.getName());
+            throw new UnexpectedError();
+        }
 
         subtitleFile.readFromSRT(f);
 
@@ -151,17 +155,6 @@ class WorkerSubAnnotator extends SwingWorker<Void, Object> {
             }
         }
         return null;
-    }
-
-    @Override
-    protected void done() {
-        try {
-            evtListener.onAppEvent(AppEvent.ANNOTATING_SUBTITLES_END, get());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
     }
 }
 
