@@ -20,7 +20,7 @@
           <level>INFO</level>
       </filter>
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-      <pattern>%-5level %logger{36} - %msg%n</pattern>
+      <pattern>%-5level %msg%n</pattern>
     </encoder>
   </appender>
 

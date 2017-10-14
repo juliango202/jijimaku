@@ -1,14 +1,18 @@
 package workers;
 
+import error.UnexpectedError;
 import models.SubtitlesCollection;
-import utils.FileManager;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.FileManager;
+
 import javax.swing.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
 
 
 public class WorkerSubFinder extends SwingWorker<SubtitlesCollection, Object> {
@@ -38,40 +42,39 @@ public class WorkerSubFinder extends SwingWorker<SubtitlesCollection, Object> {
     }
 
     private String[] supportedExtensions;
+    private File searchDirectory;
 
-    public WorkerSubFinder(String[] supportedExtensions) {
-        this.supportedExtensions = supportedExtensions;
-    }
-
-    // Return an iterator on files in the current directory and its children(recursive)
-    public Collection<File> listCurrentDirFiles(String[] extensions) {
-
-        File pathObj = new File(System.getProperty("user.dir"));
-        if(!pathObj.isDirectory()) {
-            System.out.println("Error while reading current directory");
-            System.exit(1);
+    public WorkerSubFinder(File searchDirectory, String[] supportedExtensions) {
+        if (searchDirectory == null || !searchDirectory.isDirectory()) {
+            LOGGER.error("Invalid search directory {}", String.valueOf(searchDirectory));
+            throw new UnexpectedError();
         }
-        return FileUtils.listFiles(pathObj, extensions, true);
+        this.supportedExtensions = supportedExtensions;
+        this.searchDirectory = searchDirectory;
     }
 
     @Override
-    public SubtitlesCollection doInBackground() throws Exception {
-        if( SwingUtilities.isEventDispatchThread() ) throw new Exception("FileFinder should not run on the EDT thread!");
+    public SubtitlesCollection doInBackground() {
+        if( SwingUtilities.isEventDispatchThread() ) {
+            throw new UnexpectedError("FileFinder should not run on the EDT thread!");
+        }
 
         // Read all subtitles files from current directory
         // Look for subtitles we can process
         SubtitlesCollection coll = new SubtitlesCollection();
-        for (File fileEntry : listCurrentDirFiles(supportedExtensions)) {
-            if( !fileEntry.isHidden() ) {
+        for (File fileEntry : FileUtils.listFiles(searchDirectory, supportedExtensions, true)) {
+            if( !fileEntry.isHidden() && !isSubDictFile(fileEntry)) {
                 coll.canBeAnnotated.add(fileEntry.getAbsolutePath());
-                System.out.println("Found " + fileEntry.getName());
+                LOGGER.info("Found " + fileEntry.getName());
             }
             if (isCancelled()) {
                 break;
             }
         }
 
-        if( coll.isEmpty() ) System.out.println("No subtitle found in this directory.");
+        if( coll.isEmpty() ) {
+            LOGGER.info("No subtitle found in this directory.");
+        }
         return coll;
     }
 }

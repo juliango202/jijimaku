@@ -4,6 +4,8 @@
  */
 
 import error.SubsDictError;
+
+import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -45,6 +47,7 @@ class AppMain {
 
     private AppGUI gui;
     private List<String> diskSubtitles;
+    private File searchDirectory;
 
 
     public AppMain() {
@@ -72,15 +75,6 @@ class AppMain {
     }
 
 
-    // STATES MANAGEMENT
-    // ========================================================================
-    // Use a simple state machine to drive behaviour
-    enum AppState {
-        READY,
-        SEARCHING_SUBTITLES,
-        ANNOTATING_SUBTITLES
-    }
-
     private Object runTask(SwingWorker taskWorker, String taskLabel) {
         try {
             return taskWorker.get();
@@ -98,29 +92,46 @@ class AppMain {
         }
     }
 
+    public void setSearchDirectory(File searchDirectory) {
+        LOGGER.debug("Searching in directory: {}", searchDirectory.getName());
+        this.searchDirectory = searchDirectory;
+        setState(AppMain.AppState.SEARCHING_SUBTITLES);
+    }
+
+    // Use a simple state driven behavour
+    enum AppState {
+        READY,
+        SEARCHING_SUBTITLES,
+        ANNOTATING_SUBTITLES
+    }
+
     public void setState(AppState state) {
         LOGGER.debug("Set app state to {}", state.toString());
 
         switch (state) {
             case READY:
                 gui.setReadyState(true);
-                System.out.format("\n➟ Click the 'Search' button to start searching all subtitles in the current directory (%s)\n",System.getProperty("user.dir"));
+                System.out.format("\n➟ Click the 'Find subtitles' button to find and process subtitle files(*.%s)\n", String.join(", *.", AppConst.VALID_SUBFILE_EXT));
                 break;
             case SEARCHING_SUBTITLES:
                 gui.setReadyState(false);
-                System.out.println("\n-- Searching for subtitles -------------------------------");
-                WorkerSubFinder finder = new WorkerSubFinder(AppConst.VALID_SUBFILE_EXT);
+                LOGGER.info("-- Searching for subtitles in {} -------------------------------", searchDirectory.getAbsolutePath());
+                WorkerSubFinder finder = new WorkerSubFinder(searchDirectory, AppConst.VALID_SUBFILE_EXT);
                 finder.addPropertyChangeListener(evt -> {
                     if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
                         SubtitlesCollection coll = (SubtitlesCollection)runTask(finder, "");
                         diskSubtitles = coll.canBeAnnotated;
-                        setState(AppState.ANNOTATING_SUBTITLES);
+                        if (!diskSubtitles.isEmpty()) {
+                            setState(AppState.ANNOTATING_SUBTITLES);
+                        } else {
+                            setState(AppState.READY);
+                        }
                     }
                 });
                 finder.execute();
                 break;
             case ANNOTATING_SUBTITLES:
-                System.out.println("\n-- Annotating subtitles -------------------------------");
+                LOGGER.info("-- Annotating subtitles -------------------------------");
                 WorkerSubAnnotator translater = new WorkerSubAnnotator(diskSubtitles, AppMain.class.getResourceAsStream(AppConst.JMDICT_FILE), AppConst.CONFIG_FILE);
                 translater.addPropertyChangeListener(evt -> {
                     if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {

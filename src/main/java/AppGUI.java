@@ -83,7 +83,7 @@ public class AppGUI extends JFrame implements ActionListener {
         Font menuFont = new Font("Arial", Font.PLAIN, 12);
 
         // SEARCH button ------------
-        searchBt= new JButton("Search",createImageIcon("icon_search.png",  "search icon"));
+        searchBt= new JButton("Find subtitles",createImageIcon("icon_search.png",  "search icon"));
         searchBt.addActionListener(this);
         searchBt.setFont(menuFont);
         menuBox.add(searchBt);
@@ -113,9 +113,10 @@ public class AppGUI extends JFrame implements ActionListener {
             System.exit(0);
         } else if(e.getSource() == searchBt) {
             fileChooser.showSaveDialog(null);
-            File file = fileChooser.getSelectedFile ();
-            LOGGER.debug("Selected directory: {}", file.getName());
-            app.setState(AppMain.AppState.SEARCHING_SUBTITLES);
+            File file = fileChooser.getSelectedFile();
+            if (file != null) {
+                app.setSearchDirectory(file);
+            }
         }
     }
 
