@@ -75,7 +75,7 @@ class AppMain {
     }
 
 
-    private Object runTask(SwingWorker taskWorker, String taskLabel) {
+    private Object getTaskResult(SwingWorker taskWorker, String taskLabel) {
         try {
             return taskWorker.get();
         } catch (InterruptedException e) {
@@ -119,7 +119,7 @@ class AppMain {
                 WorkerSubFinder finder = new WorkerSubFinder(searchDirectory, AppConst.VALID_SUBFILE_EXT);
                 finder.addPropertyChangeListener(evt -> {
                     if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
-                        SubtitlesCollection coll = (SubtitlesCollection)runTask(finder, "");
+                        SubtitlesCollection coll = (SubtitlesCollection) getTaskResult(finder, "");
                         diskSubtitles = coll.canBeAnnotated;
                         if (!diskSubtitles.isEmpty()) {
                             setState(AppState.ANNOTATING_SUBTITLES);
@@ -135,7 +135,7 @@ class AppMain {
                 WorkerSubAnnotator translater = new WorkerSubAnnotator(diskSubtitles, AppMain.class.getResourceAsStream(AppConst.JMDICT_FILE), AppConst.CONFIG_FILE);
                 translater.addPropertyChangeListener(evt -> {
                     if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
-                        runTask(translater, "Subtitle annotation");
+                        getTaskResult(translater, "Subtitle annotation");
                     }
                 });
                 translater.execute();
