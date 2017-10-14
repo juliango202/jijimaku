@@ -18,48 +18,30 @@ import workers.WorkerSubAnnotator;
 import workers.WorkerSubFinder;
 
 
-// Application constants should be defined here
-class AppConst {
-    public static final String APP_TITLE = "Subtitles Dictionary";
-
-    public static final String APP_DESC =   "This program reads subtitle files(format SRT) in the current directory tree and add the " +
-            "dictionary definitions for the words encountered. "+
-            "The result is a subtitle file(format ASS) that can be used for language learning: subtitles appears at the bottom "+
-            "and words definitions at the top.\n"+
-            "(Currently, only Japanese => English is supported.)\n\n" +
-            "See config.yaml for options.";
-
-    //-----------------------------------------------------
-    static final String CONFIG_FILE = "config.yaml";
-    static final String JMDICT_FILE = "/home/julian/Prog/Japanese/JpSubsDict/sampledata/resources/JMdict_e"; // => you can use data/JMDict_small to debug
-
-
-    static final String OUTPUT_SUB_EXT = "ass";
-
-    // For now only SRT subtitles are supported
-    // but it should be fairly easy to add other formats when needed
-    static final String[] VALID_SUBFILE_EXT = {"srt"};
-}
-
-
-// All the app behaviour logic should be in this file
-// Other component interact by sending AppEvents as defined below:
-enum AppEvent {
-    SEARCH_BT_CLICK,
-    SEARCHING_SUBTITLES_END,
-    CLEANINGUP_SUBTITLES_END,
-    ANNOTATING_SUBTITLES_END
-}
-
-interface AppEventListener {
-    void onAppEvent(AppEvent evt,Object param);
-}
-
-
-// JP Subtitles Definitions Writer
-// To build the application JAR in Intellij, run Build => Build Artifact
-class AppMain implements AppEventListener {
+class AppMain {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    static class AppConst {
+        public static final String APP_TITLE = "Subtitles Dictionary";
+
+        public static final String APP_DESC =   "This program reads subtitle files(format SRT) in the current directory tree and add the " +
+                "dictionary definitions for the words encountered. "+
+                "The result is a subtitle file(format ASS) that can be used for language learning: subtitles appears at the bottom "+
+                "and words definitions at the top.\n"+
+                "(Currently, only Japanese => English is supported.)\n\n" +
+                "See config.yaml for options.";
+
+        //-----------------------------------------------------
+        static final String CONFIG_FILE = "config.yaml";
+        static final String JMDICT_FILE = "/home/julian/Prog/Japanese/JpSubsDict/sampledata/resources/JMdict_e"; // => you can use data/JMDict_small to debug
+
+
+        static final String OUTPUT_SUB_EXT = "ass";
+
+        // For now only SRT subtitles are supported
+        // but it should be fairly easy to add other formats when needed
+        static final String[] VALID_SUBFILE_EXT = {"srt"};
+    }
 
     private AppGUI gui;
     private List<String> diskSubtitles;
@@ -151,18 +133,5 @@ class AppMain implements AppEventListener {
             default:
                 break;
         }
-    }
-
-
-    // EVENTS MANAGEMENT
-    // ========================================================================
-    public void onAppEvent(AppEvent evt, Object param) {
-      switch (evt) {
-          case SEARCH_BT_CLICK:
-              setState(AppState.SEARCHING_SUBTITLES);
-              break;
-          default:
-              break;
-      }
     }
 }

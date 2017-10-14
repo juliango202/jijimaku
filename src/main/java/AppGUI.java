@@ -19,16 +19,16 @@ public class AppGUI extends JFrame implements ActionListener {
 
     private JButton searchBt, quitBt;
     private JFileChooser fileChooser;
-    private AppEventListener evtListener;
+    private AppMain app;
 
     /** Creates the reusable dialog. */
-    public AppGUI(String title, AppEventListener listener) {
+    public AppGUI(String title, AppMain app) {
         super(title);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         createInterfaceComponents(getContentPane());
         pack();
         setVisible( true );
-        evtListener = listener;
+        this.app = app;
         fileChooser = new JFileChooser();
         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
     }
@@ -43,7 +43,6 @@ public class AppGUI extends JFrame implements ActionListener {
             return null;
         }
     }
-
 
     // CREATE INTERFACE COMPONENTS
     // ========================================================================
@@ -116,7 +115,7 @@ public class AppGUI extends JFrame implements ActionListener {
             fileChooser.showSaveDialog(null);
             File file = fileChooser.getSelectedFile ();
             LOGGER.debug("Selected directory: {}", file.getName());
-            evtListener.onAppEvent(AppEvent.SEARCH_BT_CLICK, null);
+            app.setState(AppMain.AppState.SEARCHING_SUBTITLES);
         }
     }
 
