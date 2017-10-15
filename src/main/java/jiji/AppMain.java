@@ -146,7 +146,7 @@ class AppMain {
 
     //-----------------------------------------------------
     static final String CONFIG_FILE = "config.yaml";
-    static final String JMDICT_FILE = "/home/julian/Prog/Japanese/JpSubsDict/sampledata/resources/JMdict_e"; // => use data/JMDict_small to debug
+    static final String JMDICT_FILE = "/home/julian/Prog/Japanese/sampledata/resources/JMdict_e"; // => use data/JMDict_small to debug
 
     //static final String OUTPUT_SUB_EXT = "ass";
 
