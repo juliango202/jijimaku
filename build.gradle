@@ -2,6 +2,7 @@
 plugins {
   id 'com.github.johnrengelman.shadow' version '2.0.1'
   id 'java'
+  id 'checkstyle'
 }
 
 repositories {
@@ -36,3 +37,25 @@ task run(type: JavaExec) {
   // arguments to pass to the application
   //args 'appArg1'
 }
+
+
+task checkstyle(type: Checkstyle) {
+  project.ext.checkstyleVersion = '8.3'
+
+  source 'src'
+  include '**/*.java'
+  showViolations true
+  ignoreFailures false
+  maxWarnings 0
+  maxErrors 0
+
+  dependencies{
+    assert project.hasProperty("checkstyleVersion")
+    checkstyle "com.puppycrawl.tools:checkstyle:${checkstyleVersion}"
+  }
+  classpath = files()
+}
+
+build.dependsOn('checkstyle')
+check.dependsOn('checkstyle')
+
