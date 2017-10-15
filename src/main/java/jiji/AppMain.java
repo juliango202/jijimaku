@@ -1,19 +1,8 @@
-
+package jiji;
 /*
  *  Subtitles Dictionary
  */
 
-import error.SubsDictError;
-import error.UnexpectedError;
-import models.SubtitlesCollection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import workers.WorkerSubAnnotator;
-import workers.WorkerSubFinder;
-
-import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
-import javax.swing.SwingWorker.StateValue;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -22,17 +11,29 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.SwingWorker.StateValue;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jiji.error.SubsDictError;
+import jiji.error.UnexpectedError;
+import jiji.models.SubtitlesCollection;
+import jiji.workers.WorkerSubAnnotator;
+import jiji.workers.WorkerSubFinder;
 
 
 class AppMain {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private AppGUI gui;
+  private AppGui gui;
   private List<String> diskSubtitles;
   private File searchDirectory;
 
   private AppMain() {
     // Initialize GUI
-    gui = new AppGUI(AppConst.APP_TITLE, this);
+    gui = new AppGui(AppConst.APP_TITLE, this);
     System.out.println(AppConst.APP_DESC);
     setState(AppState.READY);
 

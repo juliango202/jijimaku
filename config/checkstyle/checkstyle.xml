@@ -179,8 +179,9 @@
         <module name="OverloadMethodsDeclarationOrder"/>
         <module name="VariableDeclarationUsageDistance"/>
         <module name="CustomImportOrder">
+            <property name="customImportOrderRules" value="STATIC###STANDARD_JAVA_PACKAGE###THIRD_PARTY_PACKAGE###SAME_PACKAGE(1)"/>
+            <property name="thirdPartyPackageRegExp" value="^(com|org)\."/>
             <property name="separateLineBetweenGroups" value="true"/>
-            <property name="customImportOrderRules" value="THIRD_PARTY_PACKAGE###SAME_PACKAGE(3)###SPECIAL_IMPORTS"/>
             <property name="sortImportsInGroupAlphabetically" value="true"/>
         </module>
         <module name="MethodParamPad"/>
@@ -214,6 +215,7 @@
         </module>
         <module name="JavadocMethod">
             <property name="scope" value="public"/>
+            <property name="allowMissingJavadoc" value="true"/>
             <property name="allowMissingParamTags" value="true"/>
             <property name="allowMissingThrowsTags" value="true"/>
             <property name="allowMissingReturnTag" value="true"/>
