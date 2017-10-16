@@ -35,7 +35,10 @@ public class FileManager {
     unicodeData += System.getProperty("line.separator") + System.getProperty("line.separator");
     CharsetMatch match = detector.detect();
     if (match != null && match.getConfidence() > 60) {
-      LOGGER.info("{} has a detected encoding: {} and language: {}", f.getName(), match.getName(), match.getLanguage());
+      LOGGER.debug("{} has a detected encoding: {}", f.getName(), match.getName());
+      if (match.getLanguage() != null) {
+        LOGGER.debug("{} has a detected language: {}", f.getName(), match.getLanguage());
+      }
     }
 
     // TO DO => log file encoding => match.getName()

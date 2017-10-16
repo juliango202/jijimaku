@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -53,7 +54,9 @@ public class YamlConfig {
 
   public HashSet<String> getIgnoreWords() {
     String ignoreWordsText = (String) configMap.get("ignoreWords");
-    return new HashSet<>(Arrays.asList(ignoreWordsText.split("\\r?\\n")));
+    List<String> wordList = Arrays.asList(ignoreWordsText.split("\\r?\\n"));
+    wordList.removeIf(word -> word.trim().isEmpty());
+    return new HashSet<>(wordList);
   }
 
   /**

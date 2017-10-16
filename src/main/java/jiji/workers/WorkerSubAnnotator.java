@@ -27,7 +27,7 @@ import subtitleFile.FatalParsingException;
 
 
 // Background task that annotates a subtitle file with words definition
-public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
+public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private List<String> subtitlesFilePaths;
@@ -66,32 +66,24 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   // Initialization => load dictionary & parser data
   // This is a quite heavy operation so it should be launched from background thread
   private void doInitialization() {
-    System.out.print("Initializing parser and dictionary...");
-
     // Load configuration
+    LOGGER.info("Loading configuration...");
     YamlConfig config = new YamlConfig(configFile);
-    System.out.print(".");
-
-    // Load user list of words to ignore
-    for (String w : config.getIgnoreWords()) {
-      if (w.trim().length() > 0) {
-        ignoreWordsSet.add(w.trim());
-      }
-    }
+    this.ignoreWordsSet = config.getIgnoreWords();
 
     // Initialize dictionary
+    LOGGER.info("Loading dictionnary...");
     dict = new JmDict(jmdictIn);
     dict.outDict();
-    System.out.print(".");
 
     // Initialize parser
+    LOGGER.info("Instantiate parser...");
     langParser = new JapaneseParser(config);
-    System.out.print(".");
 
     // Read subtitles styles from config
     subtitleFile = new SubtitleFile(config);
 
-    System.out.println("OK");
+    LOGGER.info("Ready to work!");
   }
 
   // Return true if file was annotated, false otherwise
@@ -144,8 +136,8 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         subtitleFile.colorizeCaptionWord(token.currentForm, "#AAAAFF");
       }
 
-      //System.out.println(parse);
-      //System.out.println(dict.getParse(currentCaptionText)+"\n");
+      //LOGGER.info(parse);
+      //LOGGER.info(dict.getParse(currentCaptionText)+"\n");
       subtitleFile.addAnnotationCaption(SubStyle.Definition, allAnnotations);
     }
 
@@ -157,7 +149,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   }
 
   @Override
-  public Void doInBackground() throws Exception {
+  public Integer doInBackground() throws Exception {
     if (SwingUtilities.isEventDispatchThread()) {
       throw new Exception("SubtitlesTranslator should not run on the EDT thread!");
     }
@@ -166,20 +158,23 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
       doInitialization();
     }
 
+    Integer nbAnnotated = 0;
     for (String filePath : subtitlesFilePaths) {
       File fileEntry = new File(filePath);
       try {
-        System.out.print("Annotate " + fileEntry.getName() + "...");
+        LOGGER.info("Annotate " + fileEntry.getName() + "...");
         boolean annotated = annotateSubtitleFile(fileEntry);
-        System.out.println(annotated ? "OK" : "PASS");
-      } catch (Exception e) {
-        // on error print stack trace and continue to next file
-        System.out.println("ERROR");
-        e.printStackTrace();
-        System.out.println();
+        if (!annotated) {
+          nbAnnotated++;
+        } else {
+          LOGGER.info("Nothing to annotate was found in this file(wrong language?)");
+        }
+      } catch (Exception exc) {
+        LOGGER.error("Error while trying to annotate {}. See log for details. Skip file.", filePath);
+        LOGGER.debug("Got exception", exc);
       }
     }
-    return null;
+    return nbAnnotated;
   }
 }
 

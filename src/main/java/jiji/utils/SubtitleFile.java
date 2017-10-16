@@ -4,10 +4,14 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import subtitleFile.Caption;
 import subtitleFile.FatalParsingException;
@@ -21,6 +25,7 @@ import subtitleFile.TimedTextObject;
 // A class to work with ASS/SRT subtitle files
 // Underwood for now we use the multi-format subtitleFile library by J. David Requejo
 public class SubtitleFile {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public enum SubStyle {
     Definition,
@@ -30,7 +35,7 @@ public class SubtitleFile {
   private static final String DEFAULT_STYLES = "[V4+ Styles]\n"
       + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut"
       + ", ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-      + "Style: " + SubStyle.Definition + ",Arial,6,&H009799af,&H00677f69,&H00000000,&H99000000,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
+      + "Style: " + SubStyle.Definition + ",Arial,6,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
       + "Style: " + SubStyle.Default + ",Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
 
 
@@ -65,7 +70,7 @@ public class SubtitleFile {
     tto = ttff.parseFile(f.getName(), FileManager.getUtf8Stream(f));
     tto.styling = substyles;
     if (tto.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {
-      System.out.println("\n" + tto.warnings);
+      LOGGER.warn("\n" + tto.warnings);
     }
     annotationCaptions = new TreeMap<>();
     captionIt = tto.captions.entrySet().iterator();

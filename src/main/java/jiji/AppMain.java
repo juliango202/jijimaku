@@ -94,11 +94,11 @@ class AppMain {
         finder.addPropertyChangeListener(evt -> {
           if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
             SubtitlesCollection coll = (SubtitlesCollection) getTaskResult(finder, "");
-            if (coll == null || !diskSubtitles.isEmpty()) {
-              setState(AppState.ANNOTATING_SUBTITLES);
+            if (coll == null || coll.canBeAnnotated.isEmpty()) {
+              setState(AppState.READY);
             } else {
               diskSubtitles = coll.canBeAnnotated;
-              setState(AppState.READY);
+              setState(AppState.ANNOTATING_SUBTITLES);
             }
           }
         });
@@ -116,7 +116,9 @@ class AppMain {
         WorkerSubAnnotator translater = new WorkerSubAnnotator(diskSubtitles, in, AppConst.CONFIG_FILE);
         translater.addPropertyChangeListener(evt -> {
           if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
-            getTaskResult(translater, "Subtitle annotation");
+            Integer nbAnnotated = (Integer) getTaskResult(translater, "Subtitle annotation");
+            LOGGER.info("{} subtitle files were annotated.", nbAnnotated);
+            setState(AppState.READY);
           }
         });
         translater.execute();

@@ -2,6 +2,7 @@ package jiji.langdictionary;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,6 +15,8 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.ahocorasick.trie.Token;
 import org.ahocorasick.trie.Trie;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -22,6 +25,7 @@ import jiji.utils.FileManager;
 // Simple XML SAX parser to load JMDict xml data into a java Hashmap
 @SuppressWarnings("checkstyle")
 public class JmDict {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private Map<String, String> dict = new HashMap<String, String>();
   private Trie atrie;
@@ -66,7 +70,7 @@ public class JmDict {
     while (i.hasNext()) {
 
       Entry<String, String> entry = (Entry<String, String>) i.next();
-      System.out.println(entry.getValue());
+      LOGGER.info(entry.getValue());
     }
   }
 
