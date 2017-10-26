@@ -4,3 +4,10 @@ Jiji is a Java application for inserting dictionnary definition inside video sub
 
 TODO:
 - language detection (if needed?) => https://github.com/shuyo/language-detection/blob/wiki/ProjectHome.md
+
+For multilanguage, 2 options:
+1. custom dict format with all words forms for each entry(inverse lemmatizer)
+2. use lemmatizer library:
+* https://bitbucket.org/hlavki/jlemmagen/
+
+word list in google syntaxnet models could help
