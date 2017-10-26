@@ -1,4 +1,4 @@
-package jiji.utils;
+package jijimaku.utils;
 
 import java.awt.EventQueue;
 import java.io.OutputStream;

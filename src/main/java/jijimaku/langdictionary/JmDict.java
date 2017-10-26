@@ -1,4 +1,4 @@
-package jiji.langdictionary;
+package jijimaku.langdictionary;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import jiji.utils.FileManager;
+import jijimaku.utils.FileManager;
 
 // Simple XML SAX parser to load JMDict xml data into a java Hashmap
 @SuppressWarnings("checkstyle")

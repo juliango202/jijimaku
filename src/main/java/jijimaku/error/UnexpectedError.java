@@ -1,4 +1,4 @@
-package jiji.error;
+package jijimaku.error;
 
 @SuppressWarnings("serial")
 public class UnexpectedError extends SubsDictError {

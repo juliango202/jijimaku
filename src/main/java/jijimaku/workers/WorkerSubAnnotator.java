@@ -1,4 +1,4 @@
-package jiji.workers;
+package jijimaku.workers;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,14 +14,14 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jiji.error.UnexpectedError;
-import jiji.langdictionary.JmDict;
-import jiji.langparser.JapaneseParser;
-import jiji.langparser.LangParser.PosTag;
-import jiji.langparser.LangParser.TextToken;
-import jiji.utils.SubtitleFile;
-import jiji.utils.SubtitleFile.SubStyle;
-import jiji.utils.YamlConfig;
+import jijimaku.error.UnexpectedError;
+import jijimaku.langdictionary.JmDict;
+import jijimaku.langparser.JapaneseParser;
+import jijimaku.langparser.LangParser.PosTag;
+import jijimaku.langparser.LangParser.TextToken;
+import jijimaku.utils.SubtitleFile;
+import jijimaku.utils.SubtitleFile.SubStyle;
+import jijimaku.utils.YamlConfig;
 
 import subtitleFile.FatalParsingException;
 
@@ -164,7 +164,7 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
       try {
         LOGGER.info("Annotate " + fileEntry.getName() + "...");
         boolean annotated = annotateSubtitleFile(fileEntry);
-        if (!annotated) {
+        if (annotated) {
           nbAnnotated++;
         } else {
           LOGGER.info("Nothing to annotate was found in this file(wrong language?)");

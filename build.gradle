@@ -24,7 +24,7 @@ dependencies {
 
 jar {
   manifest {
-    attributes 'Main-Class': 'jiji.AppMain'
+    attributes 'Main-Class': 'jijimaku.AppMain'
   }
 }
 
@@ -35,7 +35,7 @@ task wrapper(type: Wrapper) {
 task run(type: JavaExec) {
   classpath = sourceSets.main.runtimeClasspath
 
-  main = 'jiji.AppMain'
+  main = 'jijimaku.AppMain'
 
   // arguments to pass to the application
   //args 'appArg1'

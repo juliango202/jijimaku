@@ -1,4 +1,4 @@
-package jiji.workers;
+package jijimaku.workers;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -12,9 +12,9 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jiji.error.UnexpectedError;
-import jiji.models.SubtitlesCollection;
-import jiji.utils.FileManager;
+import jijimaku.error.UnexpectedError;
+import jijimaku.models.SubtitlesCollection;
+import jijimaku.utils.FileManager;
 
 
 public class WorkerSubFinder extends SwingWorker<SubtitlesCollection, Object> {

@@ -1,4 +1,4 @@
-package jiji.utils;
+package jijimaku.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

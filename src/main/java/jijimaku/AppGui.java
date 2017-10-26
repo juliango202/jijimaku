@@ -1,4 +1,4 @@
-package jiji;
+package jijimaku;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -23,8 +23,8 @@ import javax.swing.WindowConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jiji.error.UnexpectedError;
-import jiji.utils.TextAreaOutputStream;
+import jijimaku.error.UnexpectedError;
+import jijimaku.utils.TextAreaOutputStream;
 
 
 // Class to layout GUI components

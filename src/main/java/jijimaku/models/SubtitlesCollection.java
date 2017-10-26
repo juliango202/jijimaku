@@ -1,4 +1,4 @@
-package jiji.models;
+package jijimaku.models;
 
 import java.util.ArrayList;
 import java.util.List;

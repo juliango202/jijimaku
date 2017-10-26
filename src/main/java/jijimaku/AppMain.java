@@ -1,4 +1,4 @@
-package jiji;
+package jijimaku;
 /*
  *  Subtitles Dictionary
  */
@@ -18,11 +18,11 @@ import javax.swing.SwingWorker.StateValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jiji.error.SubsDictError;
-import jiji.error.UnexpectedError;
-import jiji.models.SubtitlesCollection;
-import jiji.workers.WorkerSubAnnotator;
-import jiji.workers.WorkerSubFinder;
+import jijimaku.error.SubsDictError;
+import jijimaku.error.UnexpectedError;
+import jijimaku.models.SubtitlesCollection;
+import jijimaku.workers.WorkerSubAnnotator;
+import jijimaku.workers.WorkerSubFinder;
 
 
 class AppMain {

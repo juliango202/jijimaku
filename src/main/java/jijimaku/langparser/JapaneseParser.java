@@ -1,4 +1,4 @@
-package jiji.langparser;
+package jijimaku.langparser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.util.Map;
 import com.atilika.kuromoji.unidic.Token;
 import com.atilika.kuromoji.unidic.Tokenizer;
 
-import jiji.utils.YamlConfig;
+import jijimaku.utils.YamlConfig;
 
 
 //-----------------------------------------------------------------------
