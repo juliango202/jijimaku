@@ -17,6 +17,7 @@ import jijimaku.utils.YamlConfig;
 //-----------------------------------------------------------------------
 
 public class JapaneseParser implements LangParser {
+  private static final String MISSING_FORM = "*";
 
   private Tokenizer tokenizer;
 
@@ -47,18 +48,10 @@ public class JapaneseParser implements LangParser {
 
     // We use kuromoji-unidoct as parsing dictionary (larger)
     // to use the default ipadic, replace the kuromoji JAR and use the following code instead:
-    // Tokenizer tokenizer = Tokenizer.builder().mode(Mode.SEARCH).build();
-    // token.getBaseForm()
+    // Tokenizer tokenizer = Tokenizer.builder().mode(Mode.SEARCH).build(); then => token.getBaseForm()
 
     List<TextToken> tokens = new ArrayList<>();
     for (Token token : tokenizer.tokenize(text)) {
-
-      if (!token.isKnown()) {
-        // If the parser doesn't recognized the token, return it as unknown
-        tokens.add(new TextToken(PosTag.UNKNOWN, token.getWrittenForm(), token.getWrittenForm()));
-        continue;
-      }
-
       // Get the word features from kuromoji (index 0 & 1 corresponds to grammatical type & subtype)
       String[] features = token.getAllFeaturesArray();
 
@@ -73,6 +66,9 @@ public class JapaneseParser implements LangParser {
       }
       if (tag == PosTag.UNKNOWN) {
         switch (features[0]) {
+          case "空白":
+            tag = PosTag.PUNCTUATION;
+            break;
           case "記号":
             tag = PosTag.PUNCTUATION;
             break;
@@ -99,7 +95,19 @@ public class JapaneseParser implements LangParser {
         }
       }
 
-      tokens.add(new TextToken(tag, token.getWrittenForm(), token.getWrittenBaseForm()));
+      String writtenForm = !token.getWrittenForm().equals(MISSING_FORM)
+          ? token.getWrittenForm()
+          : token.getSurface();
+      String writtenBaseForm = !token.getWrittenBaseForm().equals(MISSING_FORM)
+          ? token.getWrittenBaseForm()
+          : null;
+
+      // Fix kuromoji POS tag for japanese punctuation '｡'
+      if (writtenForm.equals("｡") || writtenForm.equals("…｡")) {
+        tag = PosTag.PUNCTUATION;
+      }
+
+      tokens.add(new TextToken(tag, writtenForm, writtenBaseForm));
     }
     return tokens;
   }

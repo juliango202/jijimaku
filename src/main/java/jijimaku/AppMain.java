@@ -4,9 +4,6 @@ package jijimaku;
  */
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
@@ -106,14 +103,7 @@ class AppMain {
         break;
       case ANNOTATING_SUBTITLES:
         LOGGER.info("-- Annotating subtitles -------------------------------");
-        InputStream in;
-        try {
-          in = new FileInputStream(AppConst.JMDICT_FILE);
-        } catch (FileNotFoundException exc) {
-          LOGGER.error("Missing dictionnary file.");
-          throw new UnexpectedError();
-        }
-        WorkerSubAnnotator translater = new WorkerSubAnnotator(diskSubtitles, in, AppConst.CONFIG_FILE);
+        WorkerSubAnnotator translater = new WorkerSubAnnotator(diskSubtitles, AppConst.JMDICT_FILE, AppConst.CONFIG_FILE);
         translater.addPropertyChangeListener(evt -> {
           if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
             Integer nbAnnotated = (Integer) getTaskResult(translater, "Subtitle annotation");
@@ -137,23 +127,22 @@ class AppMain {
   }
 
   private static class AppConst {
-    static final String APP_TITLE = "Subtitles Dictionary";
+    static final String APP_TITLE = "Jijimaku Subtitles Dictionary";
 
-    static final String APP_DESC = "This program reads subtitle files(format SRT) in the current directory tree and add the "
-        + "dictionary definitions for the words encountered. "
+    static final String APP_DESC = "This program reads subtitle files in the chosen directory tree and add the "
+        + "dictionary definitions for the words encountered. \n\n"
         + "The result is a subtitle file(format ASS) that can be used for language learning: subtitles appears at the bottom "
-        + "and words definitions at the top.\n"
-        + "(Currently, only Japanese => English is supported.)\n\n"
+        + "and words definitions at the top.\n\n"
         + "See config.yaml for options.";
 
     //-----------------------------------------------------
     static final String CONFIG_FILE = "config.yaml";
-    static final String JMDICT_FILE = "/home/julian/Prog/Japanese/sampledata/resources/JMdict_e"; // => use data/JMDict_small to debug
+    static final String JMDICT_FILE = "jiji.jmdict.yaml"; // => use data/JMDict_small to debug
 
     //static final String OUTPUT_SUB_EXT = "ass";
 
     // For now only SRT subtitles are supported
     // but it should be fairly easy to add other formats when needed
-    static final String[] VALID_SUBFILE_EXT = {"srt"};
+    static final String[] VALID_SUBFILE_EXT = {"srt","ass"};
   }
 }

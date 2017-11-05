@@ -2,7 +2,6 @@ package jijimaku.workers;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -10,12 +9,13 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
+import jijimaku.jijidictionary.JijiDictionaryEntry;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jijimaku.error.UnexpectedError;
-import jijimaku.langdictionary.JmDict;
+import jijimaku.jijidictionary.JijiDictionary;
 import jijimaku.langparser.JapaneseParser;
 import jijimaku.langparser.LangParser.PosTag;
 import jijimaku.langparser.LangParser.TextToken;
@@ -31,7 +31,7 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private List<String> subtitlesFilePaths;
-  private InputStream jmdictIn;
+  private String jmdictFile;
   private String configFile;
 
   private static final EnumSet<PosTag> POS_TAGS_TO_IGNORE = EnumSet.of(
@@ -48,17 +48,17 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   /**
    * Swing worker to annotate a list of subtitle files.
    * @param subtitlesFilePaths list of subtitle files to process
-   * @param jmdictIn the dictionnary file
+   * @param jmdictFile the dictionnary file
    * @param configFile the config file
    */
-  public WorkerSubAnnotator(List<String> subtitlesFilePaths, InputStream jmdictIn, String configFile) {
+  public WorkerSubAnnotator(List<String> subtitlesFilePaths, String jmdictFile, String configFile) {
     this.subtitlesFilePaths = subtitlesFilePaths;
-    this.jmdictIn = jmdictIn;
+    this.jmdictFile = jmdictFile;
     this.configFile = configFile;
   }
 
   private JapaneseParser langParser = null;
-  private JmDict dict = null;
+  private JijiDictionary dict = null;
   private HashSet<String> ignoreWordsSet = null;  // user list of words to ignore during annotation
   private SubtitleFile subtitleFile = null;
 
@@ -73,8 +73,7 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
 
     // Initialize dictionary
     LOGGER.info("Loading dictionnary...");
-    dict = new JmDict(jmdictIn);
-    dict.outDict();
+    dict = new JijiDictionary(jmdictFile);
 
     // Initialize parser
     LOGGER.info("Instantiate parser...");
@@ -89,7 +88,7 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   // Return true if file was annotated, false otherwise
   private boolean annotateSubtitleFile(File f) throws IOException, FatalParsingException {
 
-    if (!FilenameUtils.getExtension(f.getName()).equals("srt")) {
+    if (!FilenameUtils.getExtension(f.getName()).equals("srt") && !FilenameUtils.getExtension(f.getName()).equals("ass")) {
       LOGGER.error("invalid SRT file: {}", f.getName());
       throw new UnexpectedError();
     }
@@ -108,32 +107,34 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
       //String parse = "";
       for (TextToken token : langParser.syntaxicParse(currentCaptionText)) {
 
-        //parse += token.currentForm + "|";
-        // Ignore user words list
-        if (ignoreWordsSet.contains(token.currentForm) || ignoreWordsSet.contains(token.canonicalForm)) {
+        // Ignore unimportant grammatical words
+        if (POS_TAGS_TO_IGNORE.contains(token.getPartOfSpeech())) {
           continue;
         }
 
-        // Ignore unimportant grammatical words
-        if (POS_TAGS_TO_IGNORE.contains(token.tag)) {
+        // Ignore user words list
+        if (ignoreWordsSet.contains(token.getTextForm()) || ignoreWordsSet.contains(token.getCanonicalForm())) {
           continue;
         }
 
         // Ignore words that are not in dictionary
-        String def = dict.getMeaning(token.canonicalForm);
-        if (def.isEmpty()) {
-          def = dict.getMeaning(token.currentForm);
+        List<JijiDictionaryEntry> defs = dict.getMeaning(token.getCanonicalForm());
+        if (defs.isEmpty()) {
+          defs = dict.getMeaning(token.getTextForm());
         }
-        if (def.isEmpty()) {
+        if (defs.isEmpty()) {
           continue;
         }
 
-        // If all is good, add definition to subtitle annotation
-        allAnnotations += "★ " + def + "\\N\\n";
+        // If all is good, add definitions to subtitle annotation
+        for(JijiDictionaryEntry def : defs) {
+          List<String> senses = def.getSenses();
+          allAnnotations += "★ " + String.join(", ", def.getLemmas()) + " " + String.join(" --- ", senses) + "\\N";
+        }
         nbAnnotations++;
 
         // Set a different color for words that are defined
-        subtitleFile.colorizeCaptionWord(token.currentForm, "#AAAAFF");
+        subtitleFile.colorizeCaptionWord(token.getTextForm(), "#AAAAFF");
       }
 
       //LOGGER.info(parse);

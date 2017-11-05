@@ -23,7 +23,7 @@ import subtitleFile.TimedTextObject;
 
 
 // A class to work with ASS/SRT subtitle files
-// Underwood for now we use the multi-format subtitleFile library by J. David Requejo
+// Underwood for now we use the multi-format subtitle library https://github.com/JDaren/subtitleConverter
 public class SubtitleFile {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -109,6 +109,15 @@ public class SubtitleFile {
   }
 
   public void writeToAss(String outFile) throws IOException {
+    // Fix newline problem while https://github.com/JDaren/subtitleConverter/issues/36 is not resolved
+    // --------------------------------------------
+    Iterator<Map.Entry<Integer, Caption>> it = tto.captions.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<Integer, Caption> caption = it.next();
+      caption.getValue().content = caption.getValue().content.replaceAll("<br\\s*/?>", "\\\\N");
+    }
+    // --------------------------------------------
+
     // Before writing we merge original captions and annotations
     if (!annotationCaptions.isEmpty()) {
       for (Map.Entry<Integer, Caption> entry : annotationCaptions.entrySet()) {

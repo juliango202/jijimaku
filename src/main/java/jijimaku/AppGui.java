@@ -5,6 +5,8 @@ import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -50,13 +52,16 @@ class AppGui extends JFrame implements ActionListener {
     this.app = app;
     fileChooser = new JFileChooser();
     fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+    Image image = Toolkit.getDefaultToolkit().getImage(getClass().getClassLoader().getResource("jijiico.png"));
+    setIconImage(image);
+
   }
 
   /**
    * Returns an ImageIcon, or null if the path was invalid.
    */
   private ImageIcon createImageIcon(String path, String description) {
-    java.net.URL imgUrl = getClass().getResource(path);
+    java.net.URL imgUrl = getClass().getClassLoader().getResource(path);
     if (imgUrl != null) {
       return new ImageIcon(imgUrl, description);
     } else {

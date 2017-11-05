@@ -8,7 +8,7 @@ import java.util.List;
 public interface LangParser {
 
   // Part Of Speech universal tags
-  // TODO: use universal Dependencies tags
+  // TODO: use universal Dependencies tags: http://universaldependencies.org/ja/overview/morphology.html
   enum PosTag {
     PUNCTUATION,
     SYMBOL,
@@ -25,14 +25,31 @@ public interface LangParser {
 
   class TextToken {
 
-    public PosTag tag;
-    public String currentForm;      // as it appears in the parsed sentence
-    public String canonicalForm;    // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
+    private final PosTag posTag;
+    private final String textForm;      // as it appears in the parsed sentence
+    private final String canonicalForm; // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
 
-    TextToken(PosTag t, String currf, String canonf) {
-      tag = t;
-      currentForm = currf;
-      canonicalForm = canonf;
+    TextToken(PosTag posTag, String textForm, String canonicalForm) {
+      if (textForm == null || textForm.isEmpty()) {
+        throw new IllegalArgumentException("Cannot create a TextToken from an empty string.");
+      }
+      this.posTag = posTag;
+      this.textForm = textForm;
+      this.canonicalForm = canonicalForm != null && !canonicalForm.isEmpty()
+          ? canonicalForm
+          : textForm;
+    }
+
+    public PosTag getPartOfSpeech() {
+      return posTag;
+    }
+
+    public String getTextForm() {
+      return textForm;
+    }
+
+    public String getCanonicalForm() {
+      return canonicalForm;
     }
   }
 
