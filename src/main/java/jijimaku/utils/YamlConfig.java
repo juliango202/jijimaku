@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +49,16 @@ public class YamlConfig {
     return (Map<String, String>) configMap.get(configKey);
   }
 
-  String getString(String key) {
+  public String getString(String key) {
     return (String) configMap.get(key);
+  }
+
+  public boolean getDisplayOtherLemma() {
+    return (boolean)configMap.get("displayOtherLemma");
+  }
+
+  public Map<String,String> getColors() {
+    return (HashMap)configMap.get("colors");
   }
 
   public HashSet<String> getIgnoreWords() {

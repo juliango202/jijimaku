@@ -1,8 +1,19 @@
+colors:
+  1: '#FFAAAA'
+  2: '#AAAAFF'
+  3: '#AAFFAA'
+displayOtherLemma: false
 properNouns:
   芭子: はこ
   綾: あや
   大石: おおいし
 ignoreWords:      |
+  いける
+  ランジェリー
+  エモーション
+  ターゲット
+  ブランド
+  当然
   限らない
   計
   〜計

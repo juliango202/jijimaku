@@ -1,8 +1,10 @@
 package jijimaku.utils;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.util.Hashtable;
@@ -10,6 +12,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import jijimaku.error.UnexpectedError;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +30,7 @@ import subtitleFile.TimedTextObject;
 // Underwood for now we use the multi-format subtitle library https://github.com/JDaren/subtitleConverter
 public class SubtitleFile {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String JIJIMAKU_SIGNATURE = "ANNOTATED-BY-JIJIMAKU";
 
   public enum SubStyle {
     Definition,
@@ -35,7 +40,7 @@ public class SubtitleFile {
   private static final String DEFAULT_STYLES = "[V4+ Styles]\n"
       + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut"
       + ", ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-      + "Style: " + SubStyle.Definition + ",Arial,6,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
+      + "Style: " + SubStyle.Definition + ",Arial,8,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
       + "Style: " + SubStyle.Default + ",Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
 
 
@@ -53,6 +58,7 @@ public class SubtitleFile {
       TimedTextFileFormat ttff = new FormatASS();
       String styleStr = yamlConfig.containsKey("subtitlesStyles") ? yamlConfig.getString("subtitlesStyles") : DEFAULT_STYLES;
       tto = ttff.parseFile("", new ByteArrayInputStream(styleStr.getBytes("UTF-8")));
+      tto.description = JIJIMAKU_SIGNATURE;
       substyles = tto.styling;
 
     } catch (UnsupportedEncodingException e) {
@@ -64,9 +70,40 @@ public class SubtitleFile {
     }
   }
 
+  // Read a file and return true if it was written by us
+  // (search for app signature in first 5 lines)
+  public static boolean isSubDictFile(File f) {
+    try {
+      InputStreamReader in = new InputStreamReader(FileManager.getUtf8Stream(f));
+      try (BufferedReader br = new BufferedReader(new BufferedReader(in))) {
+        String line;
+        int lineNum = 0;
+        while ((line = br.readLine()) != null && lineNum < 5) {
+          if (line.contains(JIJIMAKU_SIGNATURE)) {
+            return true;
+          }
+          lineNum++;
+        }
+      }
+      return false;
+    } catch (IOException exc) {
+      LOGGER.error("Could not process file {}", f.getName(), exc);
+      return false;
+    }
+  }
+
+
   public void readFromSrt(File f) throws IOException, FatalParsingException {
+
+    if (!FilenameUtils.getExtension(f.getName()).equals("srt") && !FilenameUtils.getExtension(f.getName()).equals("ass")) {
+      LOGGER.error("invalid subtitle file extension file: {}", f.getName());
+      throw new UnexpectedError();
+    }
+
     // Read subtitle file contents
-    TimedTextFileFormat ttff = new FormatSRT();
+    TimedTextFileFormat ttff = FilenameUtils.getExtension(f.getName()).equals("srt")
+        ? new FormatSRT()
+        : new FormatASS();
     tto = ttff.parseFile(f.getName(), FileManager.getUtf8Stream(f));
     tto.styling = substyles;
     if (tto.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {
@@ -89,8 +126,13 @@ public class SubtitleFile {
     currentCaptionEntry.getValue().style = substyles.get("Default");
   }
 
-  public void colorizeCaptionWord(String word, String color) {
-    String colorizedWord = "{\\c&" + color.substring(1) + "&}" + word + "{\\r}";
+  public static String assColorize(String str, String htmlHexColor) {
+    String assHexColor = htmlHexColor.substring(5,7) + htmlHexColor.substring(3,5) + htmlHexColor.substring(1,3);
+    return "{\\c&" + assHexColor  + "&}" + str + "{\\r}";
+  }
+
+  public void colorizeCaptionWord(String word, String htmlHexColor) {
+    String colorizedWord = assColorize(word, htmlHexColor);
     currentCaptionEntry.getValue().content = currentCaptionEntry.getValue().content.replace(word, colorizedWord);
   }
 

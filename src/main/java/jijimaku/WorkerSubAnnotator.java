@@ -1,15 +1,24 @@
-package jijimaku.workers;
+package jijimaku;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import jijimaku.jijidictionary.JijiDictionaryEntry;
+import jijimaku.models.SubtitlesCollection;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,14 +34,15 @@ import jijimaku.utils.YamlConfig;
 
 import subtitleFile.FatalParsingException;
 
+import static jijimaku.AppConst.VALID_SUBFILE_EXT;
+
 
 // Background task that annotates a subtitle file with words definition
 public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private List<String> subtitlesFilePaths;
-  private String jmdictFile;
-  private String configFile;
+  private File searchDirectory;
+  private YamlConfig config;
 
   private static final EnumSet<PosTag> POS_TAGS_TO_IGNORE = EnumSet.of(
       PosTag.PUNCTUATION,
@@ -46,15 +56,15 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   );
 
   /**
-   * Swing worker to annotate a list of subtitle files.
-   * @param subtitlesFilePaths list of subtitle files to process
-   * @param jmdictFile the dictionnary file
-   * @param configFile the config file
+   * Swing worker to search and annotate the subtitle files.
+   * @param searchDirectory disk directory where to search subtitles(recursive)
    */
-  public WorkerSubAnnotator(List<String> subtitlesFilePaths, String jmdictFile, String configFile) {
-    this.subtitlesFilePaths = subtitlesFilePaths;
-    this.jmdictFile = jmdictFile;
-    this.configFile = configFile;
+  public WorkerSubAnnotator(File searchDirectory) {
+    if (searchDirectory == null || !searchDirectory.isDirectory()) {
+      LOGGER.error("Invalid search directory {}", String.valueOf(searchDirectory));
+      throw new UnexpectedError();
+    }
+    this.searchDirectory = searchDirectory;
   }
 
   private JapaneseParser langParser = null;
@@ -66,14 +76,15 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   // Initialization => load dictionary & parser data
   // This is a quite heavy operation so it should be launched from background thread
   private void doInitialization() {
+    LOGGER.info("-------------------------- Initialization --------------------------");
     // Load configuration
     LOGGER.info("Loading configuration...");
-    YamlConfig config = new YamlConfig(configFile);
+    this.config = new YamlConfig(AppConst.CONFIG_FILE);
     this.ignoreWordsSet = config.getIgnoreWords();
 
     // Initialize dictionary
     LOGGER.info("Loading dictionnary...");
-    dict = new JijiDictionary(jmdictFile);
+    dict = new JijiDictionary(AppConst.JMDICT_FILE);
 
     // Initialize parser
     LOGGER.info("Instantiate parser...");
@@ -88,10 +99,7 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   // Return true if file was annotated, false otherwise
   private boolean annotateSubtitleFile(File f) throws IOException, FatalParsingException {
 
-    if (!FilenameUtils.getExtension(f.getName()).equals("srt") && !FilenameUtils.getExtension(f.getName()).equals("ass")) {
-      LOGGER.error("invalid SRT file: {}", f.getName());
-      throw new UnexpectedError();
-    }
+    boolean displayOtherLemma = config.getDisplayOtherLemma();
 
     subtitleFile.readFromSrt(f);
 
@@ -99,12 +107,12 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
     int nbAnnotations = 0;
     while (subtitleFile.hasNextCaption()) {
 
+      List<String> colors = new ArrayList<>(config.getColors().values());
       String currentCaptionText = subtitleFile.nextCaption();
       subtitleFile.setCaptionStyle();
 
       // Parse subtitle and lookup definitions
-      String allAnnotations = "";
-      //String parse = "";
+      List<String> annotations = new ArrayList<>();
       for (TextToken token : langParser.syntaxicParse(currentCaptionText)) {
 
         // Ignore unimportant grammatical words
@@ -127,19 +135,35 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
         }
 
         // If all is good, add definitions to subtitle annotation
+        String color = colors.iterator().next();
+        Collections.rotate(colors, -1);
         for(JijiDictionaryEntry def : defs) {
+          // Each definition is made of several lemmas and several senses
+          // Depending on "displayOtherLemma" option, display only the lemma corresponding to the subtitle word, or all lemmas
+          String lemmas = def.getLemmas().stream().map(l -> {
+            if (l.equals(token.getCanonicalForm()) || l.equals(token.getTextForm())) {
+              return SubtitleFile.assColorize(l, color);
+            } else if(displayOtherLemma) {
+              return l;
+            } else {
+              return null;
+            }
+          }).filter(Objects::nonNull).collect(Collectors.joining(", "));
+          // We don't know which sense corresponds to the subtitle so we can't do the same unfortunately ^^
+          // Just concat all senses
           List<String> senses = def.getSenses();
-          allAnnotations += "★ " + String.join(", ", def.getLemmas()) + " " + String.join(" --- ", senses) + "\\N";
+
+          annotations.add("★ " + lemmas + " " + String.join(" --- ", senses));
         }
-        nbAnnotations++;
 
         // Set a different color for words that are defined
-        subtitleFile.colorizeCaptionWord(token.getTextForm(), "#AAAAFF");
+        subtitleFile.colorizeCaptionWord(token.getTextForm(), color);
       }
 
-      //LOGGER.info(parse);
-      //LOGGER.info(dict.getParse(currentCaptionText)+"\n");
-      subtitleFile.addAnnotationCaption(SubStyle.Definition, allAnnotations);
+      if ( annotations.size() > 0) {
+        nbAnnotations += annotations.size();
+        subtitleFile.addAnnotationCaption(SubStyle.Definition, String.join("\\N", annotations));
+      }
     }
 
     if (nbAnnotations == 0) {
@@ -152,15 +176,34 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   @Override
   public Integer doInBackground() throws Exception {
     if (SwingUtilities.isEventDispatchThread()) {
-      throw new Exception("SubtitlesTranslator should not run on the EDT thread!");
+      throw new Exception("Worker should not run on the EDT thread!");
     }
 
     if (langParser == null) {
       doInitialization();
     }
 
+    LOGGER.info("-------------------------- Searching for subtitles in {} --------------------------", searchDirectory.getAbsolutePath());
+    SubtitlesCollection coll = new SubtitlesCollection();
+    for (File fileEntry : FileUtils.listFiles(searchDirectory, VALID_SUBFILE_EXT, true)) {
+      if (!fileEntry.isHidden() && !SubtitleFile.isSubDictFile(fileEntry)) {
+        coll.canBeAnnotated.add(fileEntry.getAbsolutePath());
+        LOGGER.info("Found " + fileEntry.getName());
+      }
+      if (isCancelled()) {
+        LOGGER.debug("WorkerSubAnnotator was cancelled.");
+        return 0;
+      }
+    }
+
+    if (coll.isEmpty()) {
+      LOGGER.info("No subtitle found in this directory.");
+      return 0;
+    }
+
+    LOGGER.info("-------------------------- Annotating subtitles --------------------------");
     Integer nbAnnotated = 0;
-    for (String filePath : subtitlesFilePaths) {
+    for (String filePath : coll.canBeAnnotated) {
       File fileEntry = new File(filePath);
       try {
         LOGGER.info("Annotate " + fileEntry.getName() + "...");
@@ -174,8 +217,13 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
         LOGGER.error("Error while trying to annotate {}. See log for details. Skip file.", filePath);
         LOGGER.debug("Got exception", exc);
       }
+      if (isCancelled()) {
+        LOGGER.debug("WorkerSubAnnotator was cancelled.");
+        return 0;
+      }
     }
     return nbAnnotated;
   }
+
 }
 
