@@ -14,7 +14,6 @@ class AppConst {
 
   //-----------------------------------------------------
   static final String CONFIG_FILE = "config.yaml";
-  static final String JMDICT_FILE = "jiji.jmdict.yaml"; // => use data/JMDict_small to debug
 
   //static final String OUTPUT_SUB_EXT = "ass";
 

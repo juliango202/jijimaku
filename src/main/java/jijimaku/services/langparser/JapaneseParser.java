@@ -9,7 +9,7 @@ import java.util.Map;
 import com.atilika.kuromoji.unidic.Token;
 import com.atilika.kuromoji.unidic.Tokenizer;
 
-import jijimaku.services.YamlConfig;
+import jijimaku.services.Config;
 
 
 //-----------------------------------------------------------------------
@@ -21,16 +21,17 @@ public class JapaneseParser implements LangParser {
 
   private Tokenizer tokenizer;
 
-  public JapaneseParser(YamlConfig yamlConfig) {
+  public JapaneseParser(Config config) {
 
     try {
       // Use YAML "properNouns" option to indicate a custom dict of proper nouns with their pronunciation
       // This is to help the parser recognize proper nouns in sentences
-      if (yamlConfig.containsKey("properNouns")) {
+      Map<String,String> properNouns = config.getProperNouns();
+      if (properNouns != null) {
         // Build custom user dict file in KUROMOJI format containing all the proper nouns
         // For infos on format see: https://github.com/elastic/elasticsearch-analysis-kuromoji#user-dictionary
         String properNounsDict = "";
-        for (Map.Entry<String, String> wordTrad : yamlConfig.getStringDictionary("properNouns").entrySet()) {
+        for (Map.Entry<String, String> wordTrad : properNouns.entrySet()) {
           properNounsDict += wordTrad.getKey() + "," + wordTrad.getKey() + "," + wordTrad.getValue() + ",カスタム名詞\n";
         }
         ByteArrayInputStream properNounsStream = new ByteArrayInputStream(properNounsDict.getBytes("UTF-8"));

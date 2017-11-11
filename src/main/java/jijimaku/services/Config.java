@@ -18,8 +18,14 @@ import org.yaml.snakeyaml.Yaml;
 import jijimaku.errors.UnexpectedError;
 
 
-public class YamlConfig {
+public class Config {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final String SUBTITLE_STYLES = "subtitlesStyles";
+  private static final String JIJI_DICTIONARY = "jijiDictionary";
+  private static final String PROPER_NOUNS = "properNouns";
+
+  private final String configFilePath;
 
   private Map<String, Object> configMap = null;
 
@@ -28,7 +34,8 @@ public class YamlConfig {
    * @param configFilePath path to the YAML file
    */
   @SuppressWarnings("unchecked")
-  public YamlConfig(String configFilePath) {
+  public Config(String configFilePath) {
+    this.configFilePath = configFilePath;
     try {
       Yaml yaml = new Yaml();
       InputStream stream = FileManager.getUtf8Stream(new File(configFilePath));
@@ -36,13 +43,20 @@ public class YamlConfig {
       configMap = (Map<String, Object>) yaml.load(stream);
     } catch (IOException exc) {
       LOGGER.error("Problem reading YAML config {}", configFilePath);
-      LOGGER.debug("Exception details", exc);
+      LOGGER.debug("Got exception", exc);
       throw new UnexpectedError();
     }
   }
 
-  public boolean containsKey(String key) {
-    return configMap.containsKey(key);
+  private <T> T getConfigValue(String configKey) {
+    if (!configMap.containsKey(configKey)) {
+      return null;
+    }
+    return (T) configMap.get(configKey);
+  }
+
+  public String getConfigFilePath() {
+    return configFilePath;
   }
 
   @SuppressWarnings("unchecked")
@@ -50,9 +64,7 @@ public class YamlConfig {
     return (Map<String, String>) configMap.get(configKey);
   }
 
-  public String getString(String key) {
-    return (String) configMap.get(key);
-  }
+
 
   public boolean getDisplayOtherLemma() {
     return (boolean)configMap.get("displayOtherLemma");
@@ -68,6 +80,27 @@ public class YamlConfig {
     wordList.removeIf(word -> word.trim().isEmpty());
     return new HashSet<>(wordList);
   }
+
+  public Map<String,String> getProperNouns() {
+    return getConfigValue(PROPER_NOUNS);
+  }
+
+  /**
+   * Return the JijiDictionary file(*.jiji.zip, *.jiji.yaml) used for looking up definitions.
+   */
+  public String getJijiDictionary() {
+    return getConfigValue(JIJI_DICTIONARY);
+  }
+
+  /**
+   * Return the whole ASS subtitle style definition string if present.
+   * See SubtitleService.DEFAULT_STYLES for an example
+   * Return null if SUBTITLE_STYLES is missing from config
+   */
+  public String getSubtitleStyles() {
+    return getConfigValue(SUBTITLE_STYLES);
+  }
+
 
   /**
    * Generate ASS format subtitle style from user preferences.

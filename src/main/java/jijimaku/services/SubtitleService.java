@@ -27,8 +27,10 @@ import subtitleFile.TimedTextFileFormat;
 import subtitleFile.TimedTextObject;
 
 
-// A class to work with ASS/SRT subtitle files
-// Underwood for now we use the multi-format subtitle library https://github.com/JDaren/subtitleConverter
+/**
+ * A class to work with ASS/SRT subtitle files.
+ * Underwood for now we use the multi-format subtitle library https://github.com/JDaren/subtitleConverter
+ */
 public class SubtitleService {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String JIJIMAKU_SIGNATURE = "ANNOTATED-BY-JIJIMAKU";
@@ -53,24 +55,30 @@ public class SubtitleService {
   private Iterator<Map.Entry<Integer, Caption>> captionIt;
   private Map.Entry<Integer, Caption> currentCaptionEntry;
 
-  public SubtitleService(YamlConfig yamlConfig) {
+  public SubtitleService(Config config) {
     try {
       // Read subtitle styles from config, or use default if missing
       TimedTextFileFormat ttff = new FormatASS();
-      String styleStr = yamlConfig.containsKey("subtitlesStyles") ? yamlConfig.getString("subtitlesStyles") : DEFAULT_STYLES;
-      tto = ttff.parseFile("", new ByteArrayInputStream(styleStr.getBytes("UTF-8")));
+      final String configStyles = config.getSubtitleStyles();
+      final String styles = configStyles != null ? configStyles : DEFAULT_STYLES;
+      tto = ttff.parseFile("", new ByteArrayInputStream(styles.getBytes("UTF-8")));
       substyles = tto.styling;
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalArgumentException("config.yaml should be encoded in UTF8");
-    } catch (FatalParsingException e) {
-      throw new IllegalArgumentException("The ASS subtitle styles specified in the config file seem invalid(parsing error)");
-    } catch (IOException e) {
-      throw new IllegalArgumentException("The ASS subtitle styles specified in the config file seem invalid(IO error)");
+    } catch (UnsupportedEncodingException exc) {
+      LOGGER.error("Cannot understand subtitle styles definition. Most likely {} contains some characters not encoded in UTF8.", config.getConfigFilePath());
+      LOGGER.debug("Got exception", exc);
+      throw new UnexpectedError();
+    } catch (FatalParsingException | IOException exc) {
+      LOGGER.error("The ASS subtitle styles specified in {} seem invalid", config.getConfigFilePath());
+      LOGGER.debug("Got exception", exc);
+      throw new UnexpectedError();
     }
   }
 
-  // Read a file and return true if it was written by us
-  // (search for app signature in first 5 lines)
+
+  /**
+   * Read a file and return true if it was written by us.
+   * (search for app signature in first 5 lines)
+   */
   public static boolean isSubDictFile(File f) throws IOException {
     InputStreamReader in = new InputStreamReader(FileManager.getUtf8Stream(f));
     try (BufferedReader br = new BufferedReader(new BufferedReader(in))) {

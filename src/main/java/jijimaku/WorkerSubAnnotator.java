@@ -8,7 +8,7 @@ import jijimaku.services.langparser.LangParser.PosTag;
 import jijimaku.services.langparser.LangParser.TextToken;
 import jijimaku.services.SubtitleService;
 import jijimaku.services.SubtitleService.SubStyle;
-import jijimaku.services.YamlConfig;
+import jijimaku.services.Config;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
@@ -36,7 +36,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private File searchDirectory;
-  private YamlConfig config;
+  private Config config;
 
   private static final EnumSet<PosTag> POS_TAGS_TO_IGNORE = EnumSet.of(
       PosTag.PUNCTUATION,
@@ -73,12 +73,12 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     LOGGER.info("-------------------------- Initialization --------------------------");
     // Load configuration
     LOGGER.info("Loading configuration...");
-    this.config = new YamlConfig(AppConst.CONFIG_FILE);
+    this.config = new Config(AppConst.CONFIG_FILE);
     this.ignoreWordsSet = config.getIgnoreWords();
 
     // Initialize dictionary
     LOGGER.info("Loading dictionnary...");
-    dict = new JijiDictionary(AppConst.JMDICT_FILE);
+    dict = new JijiDictionary(config.getJijiDictionary());
 
     // Initialize parser
     LOGGER.info("Instantiate parser...");

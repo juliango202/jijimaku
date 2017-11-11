@@ -2,6 +2,7 @@ colors:
   1: '#FFAAAA'
   2: '#AAAAFF'
   3: '#AAFFAA'
+jijiDictionary: jiji.jmdict.yaml
 displayOtherLemma: false
 properNouns:
   芭子: はこ
