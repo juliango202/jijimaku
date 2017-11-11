@@ -1,4 +1,4 @@
-package jijimaku.jijidictionary;
+package jijimaku.services.jijidictionary;
 
 import java.util.List;
 

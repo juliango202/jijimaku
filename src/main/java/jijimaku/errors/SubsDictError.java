@@ -1,4 +1,4 @@
-package jijimaku.error;
+package jijimaku.errors;
 
 @SuppressWarnings("serial")
 public class SubsDictError extends RuntimeException {

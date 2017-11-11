@@ -25,12 +25,13 @@ import javax.swing.WindowConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jijimaku.error.UnexpectedError;
+import jijimaku.errors.UnexpectedError;
 import jijimaku.utils.TextAreaOutputStream;
 
 
-// Class to layout GUI components
-
+/**
+ * Class to layout GUI components.
+ */
 @SuppressWarnings("serial")
 class AppGui extends JFrame implements ActionListener {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -52,7 +53,7 @@ class AppGui extends JFrame implements ActionListener {
     this.app = app;
     fileChooser = new JFileChooser();
     fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-    Image image = Toolkit.getDefaultToolkit().getImage(getClass().getClassLoader().getResource("jijiico.png"));
+    Image image = Toolkit.getDefaultToolkit().getImage(getClass().getClassLoader().getResource("iconJijimaku.png"));
     setIconImage(image);
 
   }
@@ -71,7 +72,7 @@ class AppGui extends JFrame implements ActionListener {
   }
 
   // CREATE INTERFACE COMPONENTS
-  // ========================================================================
+
   private void createInterfaceComponents(Container pane) {
 
     if (!(pane.getLayout() instanceof BorderLayout)) {
@@ -109,7 +110,7 @@ class AppGui extends JFrame implements ActionListener {
     Font menuFont = new Font("Arial", Font.PLAIN, 12);
 
     // SEARCH button ------------
-    searchBt = new JButton("Find subtitles", createImageIcon("icon_search.png", "search icon"));
+    searchBt = new JButton("Find subtitles", createImageIcon("iconSearch.png", "search icon"));
     searchBt.addActionListener(this);
     searchBt.setFont(menuFont);
     menuBox.add(searchBt);
@@ -117,7 +118,7 @@ class AppGui extends JFrame implements ActionListener {
 
     // QUIT button ------------
     menuBox.add(Box.createHorizontalGlue());
-    quitBt = new JButton("Quit", createImageIcon("icon_exit.png", "log icon"));
+    quitBt = new JButton("Quit", createImageIcon("iconTransparent.png", "use transparent icon for padding"));
     quitBt.addActionListener(this);
     quitBt.setFont(menuFont);
     menuBox.add(quitBt);
@@ -125,14 +126,17 @@ class AppGui extends JFrame implements ActionListener {
 
 
   // INTERACTION WITH APPMAIN
-  // ========================================================================
 
-  // Enable / Disable interface buttons
+  /**
+   * Enable / Disable interface buttons
+   */
   void setReadyState(Boolean canSearch) {
     searchBt.setEnabled(canSearch);
   }
 
-  // Event management => exit the app if QUIT button is pressed, otherwise bubble the event to AppMain
+  /**
+   * Event management => exit the app if QUIT button is pressed, otherwise bubble the event to AppMain
+   */
   public void actionPerformed(ActionEvent evt) {
     if (evt.getSource() == quitBt) {
       dispose();

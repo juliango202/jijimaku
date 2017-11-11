@@ -1,4 +1,4 @@
-package jijimaku.utils;
+package jijimaku.services;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,11 +10,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import jijimaku.utils.FileManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
-import jijimaku.error.UnexpectedError;
+import jijimaku.errors.UnexpectedError;
 
 
 public class YamlConfig {

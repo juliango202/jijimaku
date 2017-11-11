@@ -5,16 +5,18 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 import javax.swing.SwingWorker.StateValue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jijimaku.error.SubsDictError;
-import jijimaku.error.UnexpectedError;
+import jijimaku.errors.SubsDictError;
+import jijimaku.errors.UnexpectedError;
 
 
+/**
+ * Launch Jijimaku and handle application states.
+ */
 class AppMain {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private AppGui gui;
@@ -45,12 +47,11 @@ class AppMain {
   }
 
   private void launchAnnotationTask() {
-    WorkerSubAnnotator translater = new WorkerSubAnnotator(searchDirectory);
-    translater.addPropertyChangeListener(evt -> {
+    WorkerSubAnnotator annotator = new WorkerSubAnnotator(searchDirectory);
+    annotator.addPropertyChangeListener(evt -> {
       if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
         try {
-          Integer nbAnnotated = translater.get();
-          LOGGER.info("{} subtitle files were annotated.", nbAnnotated);
+          annotator.get();
           setState(AppState.READY);
         } catch (InterruptedException e) {
           LOGGER.warn("Subtitle annotation task was interrupted.");
@@ -65,9 +66,12 @@ class AppMain {
         }
       }
     });
-    translater.execute();
+    annotator.execute();
   }
 
+  /**
+   * Use a simple state driven behaviour.
+   */
   private void setState(AppState state) {
     LOGGER.debug("Set app state to {}", state.toString());
 
@@ -88,7 +92,6 @@ class AppMain {
     }
   }
 
-  // Use a simple state driven behavour
   private enum AppState {
     READY,
     ANNOTATING_SUBTITLES

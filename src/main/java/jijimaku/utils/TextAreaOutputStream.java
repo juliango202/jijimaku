@@ -9,18 +9,17 @@ import java.util.List;
 import javax.swing.JTextArea;
 
 /**
+ * Utility class for embedding an OutputStream in a swing TextArea.
  * From https://stackoverflow.com/a/343007/257272
- *
  * @author https://stackoverflow.com/users/8946/lawrence-dol
  */
 public class TextAreaOutputStream extends OutputStream {
 
-  // *************************************************************************************************
-  // INSTANCE MEMBERS
-  // *************************************************************************************************
-
-  private byte[] oneByte;                                                    // array for write(int val);
-  private Appender appender;                                                   // most recent action
+  /**
+   * INSTANCE MEMBERS
+   */
+  private byte[] oneByte;          // array for write(int val);
+  private Appender appender;       // most recent action
 
   public TextAreaOutputStream(JTextArea txtara, int maxlin) {
     if (maxlin < 1) {
@@ -73,10 +72,9 @@ public class TextAreaOutputStream extends OutputStream {
     } // all JVMs are required to support UTF-8
   }
 
-  // *************************************************************************************************
-  // STATIC MEMBERS
-  // *************************************************************************************************
-
+  /**
+   * STATIC MEMBERS
+   */
   private static class Appender
       implements Runnable {
     private final JTextArea textArea;
@@ -118,7 +116,7 @@ public class TextAreaOutputStream extends OutputStream {
       }
     }
 
-    // MUST BE THE ONLY METHOD THAT TOUCHES textArea!
+    /** MUST BE THE ONLY METHOD THAT TOUCHES textArea! */
     public synchronized void run() {
       if (clear) {
         textArea.setText("");

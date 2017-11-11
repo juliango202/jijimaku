@@ -1,4 +1,4 @@
-package jijimaku.langparser;
+package jijimaku.services.langparser;
 
 import java.util.List;
 

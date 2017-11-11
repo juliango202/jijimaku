@@ -1,4 +1,4 @@
-package jijimaku.utils;
+package jijimaku.services;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -12,7 +12,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import jijimaku.error.UnexpectedError;
+import jijimaku.errors.UnexpectedError;
+import jijimaku.utils.FileManager;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,9 +29,9 @@ import subtitleFile.TimedTextObject;
 
 // A class to work with ASS/SRT subtitle files
 // Underwood for now we use the multi-format subtitle library https://github.com/JDaren/subtitleConverter
-public class SubtitleFile {
+public class SubtitleService {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String JIJIMAKU_SIGNATURE = "ANNOTATED-BY-JIJIMAKU";
+  private static final String JIJIMAKU_SIGNATURE = "ANNOTATED-BY-JIJIMAKU";
 
   public enum SubStyle {
     Definition,
@@ -52,15 +53,13 @@ public class SubtitleFile {
   private Iterator<Map.Entry<Integer, Caption>> captionIt;
   private Map.Entry<Integer, Caption> currentCaptionEntry;
 
-  public SubtitleFile(YamlConfig yamlConfig) {
+  public SubtitleService(YamlConfig yamlConfig) {
     try {
       // Read subtitle styles from config, or use default if missing
       TimedTextFileFormat ttff = new FormatASS();
       String styleStr = yamlConfig.containsKey("subtitlesStyles") ? yamlConfig.getString("subtitlesStyles") : DEFAULT_STYLES;
       tto = ttff.parseFile("", new ByteArrayInputStream(styleStr.getBytes("UTF-8")));
-      tto.description = JIJIMAKU_SIGNATURE;
       substyles = tto.styling;
-
     } catch (UnsupportedEncodingException e) {
       throw new IllegalArgumentException("config.yaml should be encoded in UTF8");
     } catch (FatalParsingException e) {
@@ -72,24 +71,19 @@ public class SubtitleFile {
 
   // Read a file and return true if it was written by us
   // (search for app signature in first 5 lines)
-  public static boolean isSubDictFile(File f) {
-    try {
-      InputStreamReader in = new InputStreamReader(FileManager.getUtf8Stream(f));
-      try (BufferedReader br = new BufferedReader(new BufferedReader(in))) {
-        String line;
-        int lineNum = 0;
-        while ((line = br.readLine()) != null && lineNum < 5) {
-          if (line.contains(JIJIMAKU_SIGNATURE)) {
-            return true;
-          }
-          lineNum++;
+  public static boolean isSubDictFile(File f) throws IOException {
+    InputStreamReader in = new InputStreamReader(FileManager.getUtf8Stream(f));
+    try (BufferedReader br = new BufferedReader(new BufferedReader(in))) {
+      String line;
+      int lineNum = 0;
+      while ((line = br.readLine()) != null && lineNum < 5) {
+        if (line.contains(JIJIMAKU_SIGNATURE)) {
+          return true;
         }
+        lineNum++;
       }
-      return false;
-    } catch (IOException exc) {
-      LOGGER.error("Could not process file {}", f.getName(), exc);
-      return false;
     }
+    return false;
   }
 
 
@@ -106,6 +100,7 @@ public class SubtitleFile {
         : new FormatASS();
     tto = ttff.parseFile(f.getName(), FileManager.getUtf8Stream(f));
     tto.styling = substyles;
+    tto.description = JIJIMAKU_SIGNATURE;
     if (tto.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {
       LOGGER.warn("\n" + tto.warnings);
     }
@@ -126,13 +121,9 @@ public class SubtitleFile {
     currentCaptionEntry.getValue().style = substyles.get("Default");
   }
 
-  public static String assColorize(String str, String htmlHexColor) {
-    String assHexColor = htmlHexColor.substring(5,7) + htmlHexColor.substring(3,5) + htmlHexColor.substring(1,3);
-    return "{\\c&" + assHexColor  + "&}" + str + "{\\r}";
-  }
 
   public void colorizeCaptionWord(String word, String htmlHexColor) {
-    String colorizedWord = assColorize(word, htmlHexColor);
+    String colorizedWord = addStyleToText(word, TEXTSTYLE.COLOR, htmlHexColor);
     currentCaptionEntry.getValue().content = currentCaptionEntry.getValue().content.replace(word, colorizedWord);
   }
 
@@ -169,5 +160,33 @@ public class SubtitleFile {
     FileManager.writeStringArrayToFile(outFile, tto.toASS());
   }
 
+  /**
+   * Style some text string using ASS style tags.
+   * See http://docs.aegisub.org/3.2/ASS_Tags/
+   */
+  public static String addStyleToText(String str, TEXTSTYLE style, String param) {
+    switch (style) {
+      case BOLD:
+        return "{\\b1}" + str + "{\\r}";
+      case COLOR:
+        String assHexColor = param.substring(5,7) + param.substring(3,5) + param.substring(1,3);
+        return "{\\c&" + assHexColor  + "&}" + str + "{\\r}";
+      case ZOOM:
+        Integer assZoom = Math.round(Float.parseFloat(param) * 100);
+        return "{\\fscx" + assZoom  + "\\fscy" + assZoom + "}" + str + "{\\r}";
+      default:
+        return str;
+    }
+  }
+
+  public static String addStyleToText(String str, TEXTSTYLE style) {
+    return addStyleToText(str, style, null);
+  }
+
+  public enum TEXTSTYLE {
+    BOLD,
+    COLOR,
+    ZOOM
+  }
 }
 

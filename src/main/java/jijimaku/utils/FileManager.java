@@ -17,13 +17,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-// Utility class to manage file IO & encoding
+/**
+ * Utility class to manage file IO & encoding.
+ */
 public class FileManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // Return an utf-8 inputstream for the file
-  // convert encoding if necessary, using http://userguide.icu-project.org/conversion/detection
-  // NOTE: this will load the entire file in memory
+  /**
+   * Return an utf-8 InputStream for the file.
+   * Convert encoding if necessary, using http://userguide.icu-project.org/conversion/detection
+   * NOTE: this will load the entire file in memory
+   */
   public static InputStream getUtf8Stream(File f) throws IOException {
 
     byte[] byteData = IOUtils.toByteArray(new FileInputStream(f));
@@ -41,7 +45,6 @@ public class FileManager {
       }
     }
 
-    // TO DO => log file encoding => match.getName()
     byte[] unicodeByteData = unicodeData.getBytes("UTF-8");
 
     // Must use BOMInputStream otherwise files with BOM will broke :(((

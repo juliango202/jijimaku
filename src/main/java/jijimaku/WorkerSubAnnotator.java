@@ -1,44 +1,38 @@
 package jijimaku;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
-
-import jijimaku.jijidictionary.JijiDictionaryEntry;
-import jijimaku.models.SubtitlesCollection;
+import jijimaku.errors.UnexpectedError;
+import jijimaku.services.jijidictionary.JijiDictionary;
+import jijimaku.services.jijidictionary.JijiDictionaryEntry;
+import jijimaku.services.langparser.JapaneseParser;
+import jijimaku.services.langparser.LangParser.PosTag;
+import jijimaku.services.langparser.LangParser.TextToken;
+import jijimaku.services.SubtitleService;
+import jijimaku.services.SubtitleService.SubStyle;
+import jijimaku.services.YamlConfig;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jijimaku.error.UnexpectedError;
-import jijimaku.jijidictionary.JijiDictionary;
-import jijimaku.langparser.JapaneseParser;
-import jijimaku.langparser.LangParser.PosTag;
-import jijimaku.langparser.LangParser.TextToken;
-import jijimaku.utils.SubtitleFile;
-import jijimaku.utils.SubtitleFile.SubStyle;
-import jijimaku.utils.YamlConfig;
-
 import subtitleFile.FatalParsingException;
+
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static jijimaku.AppConst.VALID_SUBFILE_EXT;
 
 
 // Background task that annotates a subtitle file with words definition
-public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
+public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private File searchDirectory;
@@ -70,7 +64,7 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
   private JapaneseParser langParser = null;
   private JijiDictionary dict = null;
   private HashSet<String> ignoreWordsSet = null;  // user list of words to ignore during annotation
-  private SubtitleFile subtitleFile = null;
+  private SubtitleService subtitleService = null;
 
 
   // Initialization => load dictionary & parser data
@@ -91,7 +85,7 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
     langParser = new JapaneseParser(config);
 
     // Read subtitles styles from config
-    subtitleFile = new SubtitleFile(config);
+    subtitleService = new SubtitleService(config);
 
     LOGGER.info("Ready to work!");
   }
@@ -101,15 +95,15 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
 
     boolean displayOtherLemma = config.getDisplayOtherLemma();
 
-    subtitleFile.readFromSrt(f);
+    subtitleService.readFromSrt(f);
 
     // Loop through the subtitle file captions one by one
     int nbAnnotations = 0;
-    while (subtitleFile.hasNextCaption()) {
+    while (subtitleService.hasNextCaption()) {
 
       List<String> colors = new ArrayList<>(config.getColors().values());
-      String currentCaptionText = subtitleFile.nextCaption();
-      subtitleFile.setCaptionStyle();
+      String currentCaptionText = subtitleService.nextCaption();
+      subtitleService.setCaptionStyle();
 
       // Parse subtitle and lookup definitions
       List<String> annotations = new ArrayList<>();
@@ -142,7 +136,7 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
           // Depending on "displayOtherLemma" option, display only the lemma corresponding to the subtitle word, or all lemmas
           String lemmas = def.getLemmas().stream().map(l -> {
             if (l.equals(token.getCanonicalForm()) || l.equals(token.getTextForm())) {
-              return SubtitleFile.assColorize(l, color);
+              return SubtitleService.addStyleToText(l, SubtitleService.TEXTSTYLE.COLOR, color);
             } else if(displayOtherLemma) {
               return l;
             } else {
@@ -150,31 +144,37 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
             }
           }).filter(Objects::nonNull).collect(Collectors.joining(", "));
           // We don't know which sense corresponds to the subtitle so we can't do the same unfortunately ^^
-          // Just concat all senses
+          // => just concat all senses
           List<String> senses = def.getSenses();
+          // Represent language level with unicode characters ①, ②, ③, ④, ...
+          String langLevelStr = " ";
+          if (def.getFrequency() != null) {
+            String langLevelChar = Character.toString((char)(9312 + def.getFrequency()));
+            langLevelStr = " " + SubtitleService.addStyleToText(langLevelChar, SubtitleService.TEXTSTYLE.BOLD) + " ";
+          }
 
-          annotations.add("★ " + lemmas + " " + String.join(" --- ", senses));
+          annotations.add("★ " + lemmas + langLevelStr + String.join(" --- ", senses));
         }
 
         // Set a different color for words that are defined
-        subtitleFile.colorizeCaptionWord(token.getTextForm(), color);
+        subtitleService.colorizeCaptionWord(token.getTextForm(), color);
       }
 
       if ( annotations.size() > 0) {
         nbAnnotations += annotations.size();
-        subtitleFile.addAnnotationCaption(SubStyle.Definition, String.join("\\N", annotations));
+        subtitleService.addAnnotationCaption(SubStyle.Definition, String.join("\\N", annotations));
       }
     }
 
     if (nbAnnotations == 0) {
       return false;
     }
-    subtitleFile.writeToAss(f.getParent() + "/" + FilenameUtils.getBaseName(f.getName()) + ".ass");
+    subtitleService.writeToAss(f.getParent() + "/" + FilenameUtils.getBaseName(f.getName()) + ".ass");
     return true;
   }
 
   @Override
-  public Integer doInBackground() throws Exception {
+  public Void doInBackground() throws Exception {
     if (SwingUtilities.isEventDispatchThread()) {
       throw new Exception("Worker should not run on the EDT thread!");
     }
@@ -183,46 +183,36 @@ public class WorkerSubAnnotator extends SwingWorker<Integer, Object> {
       doInitialization();
     }
 
-    LOGGER.info("-------------------------- Searching for subtitles in {} --------------------------", searchDirectory.getAbsolutePath());
-    SubtitlesCollection coll = new SubtitlesCollection();
-    for (File fileEntry : FileUtils.listFiles(searchDirectory, VALID_SUBFILE_EXT, true)) {
-      if (!fileEntry.isHidden() && !SubtitleFile.isSubDictFile(fileEntry)) {
-        coll.canBeAnnotated.add(fileEntry.getAbsolutePath());
-        LOGGER.info("Found " + fileEntry.getName());
-      }
-      if (isCancelled()) {
-        LOGGER.debug("WorkerSubAnnotator was cancelled.");
-        return 0;
-      }
-    }
-
-    if (coll.isEmpty()) {
-      LOGGER.info("No subtitle found in this directory.");
-      return 0;
-    }
-
-    LOGGER.info("-------------------------- Annotating subtitles --------------------------");
+    LOGGER.info("------------------- Searching in {} -------------------", searchDirectory.getAbsolutePath());
     Integer nbAnnotated = 0;
-    for (String filePath : coll.canBeAnnotated) {
-      File fileEntry = new File(filePath);
+    for (File fileEntry : FileUtils.listFiles(searchDirectory, VALID_SUBFILE_EXT, true)) {
       try {
-        LOGGER.info("Annotate " + fileEntry.getName() + "...");
-        boolean annotated = annotateSubtitleFile(fileEntry);
-        if (annotated) {
+        if (fileEntry.isHidden() || SubtitleService.isSubDictFile(fileEntry)) {
+          continue;
+        }
+        LOGGER.info("Processing " + fileEntry.getName() + "...");
+        if (annotateSubtitleFile(fileEntry)) {
           nbAnnotated++;
         } else {
           LOGGER.info("Nothing to annotate was found in this file(wrong language?)");
         }
       } catch (Exception exc) {
-        LOGGER.error("Error while trying to annotate {}. See log for details. Skip file.", filePath);
+        LOGGER.error("Error while trying to annotate {}. See log for details. Skip file.", fileEntry.getName());
         LOGGER.debug("Got exception", exc);
       }
+
       if (isCancelled()) {
         LOGGER.debug("WorkerSubAnnotator was cancelled.");
-        return 0;
+        return null;
       }
     }
-    return nbAnnotated;
+
+    if (nbAnnotated > 0) {
+      LOGGER.info("{} subtitle files were annotated.", nbAnnotated);
+    } else {
+      LOGGER.info("No subtitle found in this directory.");
+    }
+    return null;
   }
 
 }
