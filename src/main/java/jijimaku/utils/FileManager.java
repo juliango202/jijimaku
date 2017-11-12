@@ -49,6 +49,7 @@ public class FileManager {
 
     // Must use BOMInputStream otherwise files with BOM will broke :(((
     // => http://stackoverflow.com/questions/4897876/reading-utf-8-bom-marker
+    // TODO: fix problem of stream not closed
     return new BOMInputStream(new ByteArrayInputStream(unicodeByteData));
   }
 

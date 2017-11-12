@@ -11,7 +11,7 @@
     </encoder>
       <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
           <FileNamePattern>logs/subsdict.%d{yyyy-MM-dd}.log</FileNamePattern>
-          <MaxHistory>3</MaxHistory>      <!-- keep 7 days' worth of history -->
+          <maxHistory>3</maxHistory>
       </rollingPolicy>
   </appender>
 

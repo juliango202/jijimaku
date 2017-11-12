@@ -1,34 +1,37 @@
 package jijimaku;
 
-import jijimaku.errors.UnexpectedError;
-import jijimaku.services.jijidictionary.JijiDictionary;
-import jijimaku.services.jijidictionary.JijiDictionaryEntry;
-import jijimaku.services.langparser.JapaneseParser;
-import jijimaku.services.langparser.LangParser.PosTag;
-import jijimaku.services.langparser.LangParser.TextToken;
-import jijimaku.services.SubtitleService;
-import jijimaku.services.SubtitleService.SubStyle;
-import jijimaku.services.Config;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import subtitleFile.FatalParsingException;
+import static jijimaku.AppConst.VALID_SUBFILE_EXT;
 
-import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 
-import static jijimaku.AppConst.VALID_SUBFILE_EXT;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jijimaku.errors.UnexpectedError;
+import jijimaku.services.Config;
+import jijimaku.services.SubtitleService;
+import jijimaku.services.SubtitleService.SubStyle;
+import jijimaku.services.jijidictionary.JijiDictionary;
+import jijimaku.services.jijidictionary.JijiDictionaryEntry;
+import jijimaku.services.langparser.JapaneseParser;
+import jijimaku.services.langparser.LangParser.PosTag;
+import jijimaku.services.langparser.LangParser.TextToken;
+
+import subtitleFile.FatalParsingException;
+
 
 
 // Background task that annotates a subtitle file with words definition
@@ -63,7 +66,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
   private JapaneseParser langParser = null;
   private JijiDictionary dict = null;
-  private HashSet<String> ignoreWordsSet = null;  // user list of words to ignore during annotation
+  private Set<String> ignoreWordsSet = null;  // user list of words to ignore during annotation
   private SubtitleService subtitleService = null;
 
 
@@ -93,9 +96,9 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   // Return true if file was annotated, false otherwise
   private boolean annotateSubtitleFile(File f) throws IOException, FatalParsingException {
 
-    boolean displayOtherLemma = config.getDisplayOtherLemma();
+    Boolean displayOtherLemma = config.getDisplayOtherLemma();
 
-    subtitleService.readFromSrt(f);
+    subtitleService.readFile(f);
 
     // Loop through the subtitle file captions one by one
     int nbAnnotations = 0;
@@ -131,13 +134,13 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         // If all is good, add definitions to subtitle annotation
         String color = colors.iterator().next();
         Collections.rotate(colors, -1);
-        for(JijiDictionaryEntry def : defs) {
+        for (JijiDictionaryEntry def : defs) {
           // Each definition is made of several lemmas and several senses
           // Depending on "displayOtherLemma" option, display only the lemma corresponding to the subtitle word, or all lemmas
           String lemmas = def.getLemmas().stream().map(l -> {
             if (l.equals(token.getCanonicalForm()) || l.equals(token.getTextForm())) {
-              return SubtitleService.addStyleToText(l, SubtitleService.TEXTSTYLE.COLOR, color);
-            } else if(displayOtherLemma) {
+              return SubtitleService.addStyleToText(l, SubtitleService.TextStyle.COLOR, color);
+            } else if (displayOtherLemma) {
               return l;
             } else {
               return null;
@@ -150,17 +153,22 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
           String langLevelStr = " ";
           if (def.getFrequency() != null) {
             String langLevelChar = Character.toString((char)(9312 + def.getFrequency()));
-            langLevelStr = " " + SubtitleService.addStyleToText(langLevelChar, SubtitleService.TEXTSTYLE.BOLD) + " ";
+            langLevelStr = " " + SubtitleService.addStyleToText(langLevelChar, SubtitleService.TextStyle.BOLD) + " ";
           }
 
-          annotations.add("★ " + lemmas + langLevelStr + String.join(" --- ", senses));
+          String pronounciationStr = "";
+          if (def.getPronounciation() != null) {
+            pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
+          }
+
+          annotations.add("★ " + lemmas + langLevelStr + pronounciationStr + String.join(" --- ", senses));
         }
 
         // Set a different color for words that are defined
         subtitleService.colorizeCaptionWord(token.getTextForm(), color);
       }
 
-      if ( annotations.size() > 0) {
+      if (annotations.size() > 0) {
         nbAnnotations += annotations.size();
         subtitleService.addAnnotationCaption(SubStyle.Definition, String.join("\\N", annotations));
       }
@@ -188,6 +196,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     for (File fileEntry : FileUtils.listFiles(searchDirectory, VALID_SUBFILE_EXT, true)) {
       try {
         if (fileEntry.isHidden() || SubtitleService.isSubDictFile(fileEntry)) {
+          LOGGER.debug("{} is one of our annotated subtitle, skip it.", fileEntry.getName());
           continue;
         }
         LOGGER.info("Processing " + fileEntry.getName() + "...");

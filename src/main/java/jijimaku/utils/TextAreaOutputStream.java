@@ -16,7 +16,7 @@ import javax.swing.JTextArea;
 public class TextAreaOutputStream extends OutputStream {
 
   /**
-   * INSTANCE MEMBERS
+   * INSTANCE MEMBERS.
    */
   private byte[] oneByte;          // array for write(int val);
   private Appender appender;       // most recent action
@@ -73,7 +73,7 @@ public class TextAreaOutputStream extends OutputStream {
   }
 
   /**
-   * STATIC MEMBERS
+   * STATIC MEMBERS.
    */
   private static class Appender
       implements Runnable {
@@ -116,7 +116,7 @@ public class TextAreaOutputStream extends OutputStream {
       }
     }
 
-    /** MUST BE THE ONLY METHOD THAT TOUCHES textArea! */
+    /** MUST BE THE ONLY METHOD THAT TOUCHES textArea. */
     public synchronized void run() {
       if (clear) {
         textArea.setText("");

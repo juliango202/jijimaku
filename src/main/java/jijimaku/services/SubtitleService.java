@@ -12,11 +12,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import jijimaku.errors.UnexpectedError;
-import jijimaku.utils.FileManager;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
+
+import jijimaku.errors.UnexpectedError;
+import jijimaku.utils.FileManager;
 
 import subtitleFile.Caption;
 import subtitleFile.FatalParsingException;
@@ -25,6 +27,7 @@ import subtitleFile.FormatSRT;
 import subtitleFile.Style;
 import subtitleFile.TimedTextFileFormat;
 import subtitleFile.TimedTextObject;
+
 
 
 /**
@@ -43,7 +46,7 @@ public class SubtitleService {
   private static final String DEFAULT_STYLES = "[V4+ Styles]\n"
       + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut"
       + ", ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-      + "Style: " + SubStyle.Definition + ",Arial,8,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
+      + "Style: " + SubStyle.Definition + ",Arial,{},16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
       + "Style: " + SubStyle.Default + ",Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
 
 
@@ -59,12 +62,19 @@ public class SubtitleService {
     try {
       // Read subtitle styles from config, or use default if missing
       TimedTextFileFormat ttff = new FormatASS();
-      final String configStyles = config.getSubtitleStyles();
-      final String styles = configStyles != null ? configStyles : DEFAULT_STYLES;
+      final String styles;
+      if (config.getSubtitleStyles() != null) {
+        styles = config.getSubtitleStyles();
+      } else {
+        styles = MessageFormatter.format(DEFAULT_STYLES,
+            config.getDefinitionSize()
+        ).getMessage();
+      }
       tto = ttff.parseFile("", new ByteArrayInputStream(styles.getBytes("UTF-8")));
       substyles = tto.styling;
     } catch (UnsupportedEncodingException exc) {
-      LOGGER.error("Cannot understand subtitle styles definition. Most likely {} contains some characters not encoded in UTF8.", config.getConfigFilePath());
+      LOGGER.error("Cannot understand subtitle styles definition. Most likely {} contains some characters not encoded in UTF8.",
+          config.getConfigFilePath());
       LOGGER.debug("Got exception", exc);
       throw new UnexpectedError();
     } catch (FatalParsingException | IOException exc) {
@@ -95,18 +105,17 @@ public class SubtitleService {
   }
 
 
-  public void readFromSrt(File f) throws IOException, FatalParsingException {
-
-    if (!FilenameUtils.getExtension(f.getName()).equals("srt") && !FilenameUtils.getExtension(f.getName()).equals("ass")) {
-      LOGGER.error("invalid subtitle file extension file: {}", f.getName());
+  public void readFile(File file) throws IOException, FatalParsingException {
+    if (!FilenameUtils.getExtension(file.getName()).equals("srt") && !FilenameUtils.getExtension(file.getName()).equals("ass")) {
+      LOGGER.error("invalid subtitle file extension file: {}", file.getName());
       throw new UnexpectedError();
     }
 
     // Read subtitle file contents
-    TimedTextFileFormat ttff = FilenameUtils.getExtension(f.getName()).equals("srt")
+    TimedTextFileFormat ttff = FilenameUtils.getExtension(file.getName()).equals("srt")
         ? new FormatSRT()
         : new FormatASS();
-    tto = ttff.parseFile(f.getName(), FileManager.getUtf8Stream(f));
+    tto = ttff.parseFile(file.getName(), FileManager.getUtf8Stream(file));
     tto.styling = substyles;
     tto.description = JIJIMAKU_SIGNATURE;
     if (tto.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {
@@ -131,7 +140,7 @@ public class SubtitleService {
 
 
   public void colorizeCaptionWord(String word, String htmlHexColor) {
-    String colorizedWord = addStyleToText(word, TEXTSTYLE.COLOR, htmlHexColor);
+    String colorizedWord = addStyleToText(word, TextStyle.COLOR, htmlHexColor);
     currentCaptionEntry.getValue().content = currentCaptionEntry.getValue().content.replace(word, colorizedWord);
   }
 
@@ -172,7 +181,7 @@ public class SubtitleService {
    * Style some text string using ASS style tags.
    * See http://docs.aegisub.org/3.2/ASS_Tags/
    */
-  public static String addStyleToText(String str, TEXTSTYLE style, String param) {
+  public static String addStyleToText(String str, TextStyle style, String param) {
     switch (style) {
       case BOLD:
         return "{\\b1}" + str + "{\\r}";
@@ -187,11 +196,11 @@ public class SubtitleService {
     }
   }
 
-  public static String addStyleToText(String str, TEXTSTYLE style) {
+  public static String addStyleToText(String str, TextStyle style) {
     return addStyleToText(str, style, null);
   }
 
-  public enum TEXTSTYLE {
+  public enum TextStyle {
     BOLD,
     COLOR,
     ZOOM

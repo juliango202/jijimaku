@@ -1,9 +1,9 @@
 package jijimaku.models;
 
+import jijimaku.services.Config;
+import jijimaku.services.SubtitleService;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.langparser.JapaneseParser;
-import jijimaku.services.SubtitleService;
-import jijimaku.services.Config;
 
 /**
  * Container for all our services.

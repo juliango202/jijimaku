@@ -128,14 +128,15 @@ class AppGui extends JFrame implements ActionListener {
   // INTERACTION WITH APPMAIN
 
   /**
-   * Enable / Disable interface buttons
+   * Enable / Disable interface buttons.
    */
   void setReadyState(Boolean canSearch) {
     searchBt.setEnabled(canSearch);
   }
 
   /**
-   * Event management => exit the app if QUIT button is pressed, otherwise bubble the event to AppMain
+   * Event management.
+   * => exit the app if QUIT button is pressed, otherwise bubble the event to AppMain
    */
   public void actionPerformed(ActionEvent evt) {
     if (evt.getSource() == quitBt) {

@@ -40,8 +40,10 @@ public class JijiDictionary {
   private static final String DICTIONARY_INFO_KEY = "about_this_dictionary";
   private static final String SENSE_KEY = "sense";
   private static final String SENSES_KEY = "senses";
+  private static final String PRONOUNCIATION_KEY = "pronounciation";
   private static final String FREQUENCY_KEY = "frequency";
   private static final String LEMMAS_SPLIT_RE = "\\s*,\\s*";
+  private static final String PRONOUNCIATION_SPLIT_RE = "\\s*,\\s*";
 
   private Map<String, List<JijiDictionaryEntry>> entries = new HashMap<>();
 
@@ -59,6 +61,7 @@ public class JijiDictionary {
 
           // Parse senses
           List<String> senses = new ArrayList<>();
+          List<String> pronounciation = null;
           if (entryMap.containsKey(SENSE_KEY)) {
             senses.add((String)entryMap.get(SENSE_KEY));
           } else if (entryMap.containsKey(SENSES_KEY)) {
@@ -68,6 +71,11 @@ public class JijiDictionary {
             return;
           }
 
+          if (entryMap.containsKey(PRONOUNCIATION_KEY)) {
+            String pronounciationStr = ((String)entryMap.get(PRONOUNCIATION_KEY));
+            pronounciation = Arrays.asList(pronounciationStr.split(PRONOUNCIATION_SPLIT_RE));
+          }
+
           // Parse frequency
           Integer frequency = entryMap.containsKey(FREQUENCY_KEY)
               ? (Integer)entryMap.get(FREQUENCY_KEY)
@@ -75,7 +83,7 @@ public class JijiDictionary {
 
           // Create Jiji dictionary entry and index it for each lemma
           List<String> lemmas = Arrays.asList(key.split(LEMMAS_SPLIT_RE));
-          JijiDictionaryEntry jijiEntry = new JijiDictionaryEntry(lemmas, frequency, senses);
+          JijiDictionaryEntry jijiEntry = new JijiDictionaryEntry(lemmas, frequency, senses, pronounciation);
           for (String lemma : lemmas) {
             if (!entries.containsKey(lemma)) {
               entries.put(lemma, new ArrayList<>());

@@ -9,114 +9,155 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import jijimaku.utils.FileManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import jijimaku.errors.UnexpectedError;
+import jijimaku.utils.FileManager;
 
 
+/**
+ * Jijimaku configuration parameters(read from a YAML file).
+ */
 public class Config {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String SUBTITLE_STYLES = "subtitlesStyles";
-  private static final String JIJI_DICTIONARY = "jijiDictionary";
-  private static final String PROPER_NOUNS = "properNouns";
-
+  // Yaml properties
   private final String configFilePath;
+  private final Map<String, Object> configMap;
 
-  private Map<String, Object> configMap = null;
+  // Jijimaku config values
+  private final Map<String,String> colors;
+  private final Set<String> ignoreWords;
+  private final Boolean displayOtherLemma;
+  private final Map<String, String> properNouns;
+  private final String jijiDictionary;
+  private final String assStyles;
+  private final Map<String, String> definitionStyle;
 
   /**
-   * Read user preferences from YAML file.
-   * @param configFilePath path to the YAML file
+   * Read user preferences from a YAML config file.
    */
-  @SuppressWarnings("unchecked")
   public Config(String configFilePath) {
     this.configFilePath = configFilePath;
+
+    // Parse YAML file
     try {
       Yaml yaml = new Yaml();
       InputStream stream = FileManager.getUtf8Stream(new File(configFilePath));
-
-      configMap = (Map<String, Object>) yaml.load(stream);
-    } catch (IOException exc) {
+      configMap = (new HashMap<String, Object>()).getClass().cast(yaml.load(stream));
+    } catch (IOException | ClassCastException exc) {
       LOGGER.error("Problem reading YAML config {}", configFilePath);
+      LOGGER.debug("Got exception", exc);
+      throw new UnexpectedError();
+    }
+
+    // Load config values
+    final Map<String, String> hashMapStringString = new HashMap<>();
+
+    // TODO: check type of hashmap keys(not done on cast)
+
+    colors = getConfigValue("colors", hashMapStringString.getClass());
+    properNouns = getConfigValue("properNouns", hashMapStringString.getClass());
+    definitionStyle = getConfigValue("definitionStyle", hashMapStringString.getClass());
+
+    displayOtherLemma = getConfigValue("displayOtherLemma", Boolean.class);
+    jijiDictionary = getConfigValue("jijiDictionary", String.class);
+    assStyles = getConfigValue("assStyles", String.class);
+
+    // Load ignore words, convert config String to a Set
+    final String ignoreWordsText = getConfigValue("ignoreWords", String.class);
+    if (ignoreWordsText == null) {
+      ignoreWords = null;
+    } else {
+      List<String> wordList = Arrays.asList(ignoreWordsText.split("\\r?\\n"));
+      wordList.removeIf(word -> word.trim().isEmpty());
+      ignoreWords = new HashSet<>(wordList);
+    }
+  }
+
+  /**
+   * Generic method to get a config value of some type.
+   * @param paramKey Yaml file key for the value
+   * @param paramType Java class that can represent this value
+   * @return the config value as a paramType instance, or null if missing from config.
+   */
+  private <T> T getConfigValue(String paramKey, Class<T> paramType) {
+    if (!configMap.containsKey(paramKey)) {
+      return null;
+    }
+    try {
+      return paramType.cast(configMap.get(paramKey));
+    } catch (ClassCastException exc) {
+      LOGGER.error("Config parameter {} in file {} is not in the expected format(see logs). Check the documentation for the proper syntax.",
+          paramKey, configFilePath);
       LOGGER.debug("Got exception", exc);
       throw new UnexpectedError();
     }
   }
 
-  private <T> T getConfigValue(String configKey) {
-    if (!configMap.containsKey(configKey)) {
-      return null;
-    }
-    return (T) configMap.get(configKey);
-  }
-
-  public String getConfigFilePath() {
+  String getConfigFilePath() {
     return configFilePath;
   }
 
-  @SuppressWarnings("unchecked")
-  public Map<String, String> getStringDictionary(String configKey) {
-    return (Map<String, String>) configMap.get(configKey);
-  }
 
-
-
-  public boolean getDisplayOtherLemma() {
-    return (boolean)configMap.get("displayOtherLemma");
-  }
-
+  /**
+   * Color configuration for defined words.
+   */
   public Map<String,String> getColors() {
-    return (HashMap)configMap.get("colors");
+    return colors;
   }
 
-  public HashSet<String> getIgnoreWords() {
-    String ignoreWordsText = (String) configMap.get("ignoreWords");
-    List<String> wordList = Arrays.asList(ignoreWordsText.split("\\r?\\n"));
-    wordList.removeIf(word -> word.trim().isEmpty());
-    return new HashSet<>(wordList);
+  /**
+   * Set of subtitles words that should be ignored(not annotated).
+   */
+  public Set<String> getIgnoreWords() {
+    return ignoreWords;
+  }
+
+  /**
+   * Flag to display all lemmas of words or not.
+   */
+  public Boolean getDisplayOtherLemma() {
+    return displayOtherLemma;
   }
 
   public Map<String,String> getProperNouns() {
-    return getConfigValue(PROPER_NOUNS);
+    return properNouns;
   }
 
   /**
    * Return the JijiDictionary file(*.jiji.zip, *.jiji.yaml) used for looking up definitions.
    */
   public String getJijiDictionary() {
-    return getConfigValue(JIJI_DICTIONARY);
+    return jijiDictionary;
   }
 
   /**
    * Return the whole ASS subtitle style definition string if present.
-   * See SubtitleService.DEFAULT_STYLES for an example
+   * See SubtitleService.DEFAULT_STYLES for an example,
+   * and https://www.matroska.org/technical/specs/subtitles/ssa.html for the specs.
    * Return null if SUBTITLE_STYLES is missing from config
    */
   public String getSubtitleStyles() {
-    return getConfigValue(SUBTITLE_STYLES);
+    return assStyles;
   }
 
+  /**
+   * Color of text when writing definitions.
+   */
+  public String getDefinitionColor() {
+    return definitionStyle.get("color");
+  }
 
   /**
-   * Generate ASS format subtitle style from user preferences.
-   * @return The subtitle style to use in ASS format
+   * Size of text when writing definitions.
    */
-  //  public String getSubtitlesStyle() {
-  //    if (configMap.containsKey("subtitlesStyles")) {
-  //      return (String) configMap.get("subtitlesStyles");
-  //    } else {
-  //      return "[V4+ Styles]\n"
-  //          + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut"
-  //          + ", ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-  //          + "Style: Definition,Arial,6,&H009799af,&H00677f69,&H00000000,&H99000000,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
-  //          + "Style: Default,Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
-  //    }
-  //  }
-
+  public String getDefinitionSize() {
+    return definitionStyle.get("size") != null ? definitionStyle.get("size") : "8";
+  }
 }
 
