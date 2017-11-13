@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,6 +38,7 @@ public class Config {
   private final String jijiDictionary;
   private final String assStyles;
   private final Map<String, String> definitionStyle;
+  private final List<Integer> ignoreFrequencies;
 
   /**
    * Read user preferences from a YAML config file.
@@ -63,6 +65,7 @@ public class Config {
     colors = getConfigValue("colors", hashMapStringString.getClass());
     properNouns = getConfigValue("properNouns", hashMapStringString.getClass());
     definitionStyle = getConfigValue("definitionStyle", hashMapStringString.getClass());
+    ignoreFrequencies = getConfigValue("ignoreFrequencies", (new ArrayList<Integer>()).getClass());
 
     displayOtherLemma = getConfigValue("displayOtherLemma", Boolean.class);
     jijiDictionary = getConfigValue("jijiDictionary", String.class);
@@ -158,6 +161,13 @@ public class Config {
    */
   public String getDefinitionSize() {
     return definitionStyle.get("size") != null ? definitionStyle.get("size") : "8";
+  }
+
+  /**
+   * Ignore words if their frequency is one of the list.
+   */
+  public List<Integer> getIgnoreFrequencies() {
+    return ignoreFrequencies != null ? ignoreFrequencies : new ArrayList<>();
   }
 }
 

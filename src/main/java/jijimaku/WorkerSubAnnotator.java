@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -15,6 +16,9 @@ import java.util.stream.Collectors;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
+import jijimaku.models.DictionaryMatch;
+import jijimaku.services.langparser.LangParser;
+import jijimaku.services.langparser.LangParser.TextToken;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
@@ -28,7 +32,6 @@ import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.jijidictionary.JijiDictionaryEntry;
 import jijimaku.services.langparser.JapaneseParser;
 import jijimaku.services.langparser.LangParser.PosTag;
-import jijimaku.services.langparser.LangParser.TextToken;
 
 import subtitleFile.FatalParsingException;
 
@@ -93,6 +96,49 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     LOGGER.info("Ready to work!");
   }
 
+  /**
+   * Return all the dictionary matches for one caption.
+   * A syntaxic parse of the caption returns a list of tokens.
+   * Next we must group tokens together if they is a corresponding definition in the dictionary.
+   */
+  private List<DictionaryMatch> getCaptionMatches(String caption) {
+
+    List<DictionaryMatch> matches = new ArrayList<>();
+    for(TextToken token : langParser.syntaxicParse(caption)) {
+      // Ignore unimportant grammatical words
+      if (POS_TAGS_TO_IGNORE.contains(token.getPartOfSpeech())) {
+        continue;
+      }
+
+      // Ignore words that are not in dictionary
+      List<JijiDictionaryEntry> defs = dict.getEntriesForWord(token.getCanonicalForm());
+      if (defs.isEmpty()) {
+        defs = dict.getEntriesForWord(token.getTextForm());
+      }
+      if (defs.isEmpty()) {
+        continue;
+      }
+
+      // Ignore user words list
+      if (ignoreWordsSet.contains(token.getTextForm()) || ignoreWordsSet.contains(token.getCanonicalForm())) {
+        continue;
+      }
+
+      // Filter definitions depending on user ignoreFrequency option
+      List<JijiDictionaryEntry> validDefs = defs.stream()
+          .filter(d -> d.getFrequency() == null || !config.getIgnoreFrequencies().contains(d.getFrequency()))
+          .collect(Collectors.toList());
+      if (validDefs.isEmpty()) {
+        continue;
+      }
+
+      DictionaryMatch match = new DictionaryMatch(Arrays.asList(token), validDefs);
+      matches.add(match);
+    }
+
+    return matches;
+  }
+
   // Return true if file was annotated, false otherwise
   private boolean annotateSubtitleFile(File f) throws IOException, FatalParsingException {
 
@@ -110,35 +156,15 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
       // Parse subtitle and lookup definitions
       List<String> annotations = new ArrayList<>();
-      for (TextToken token : langParser.syntaxicParse(currentCaptionText)) {
-
-        // Ignore unimportant grammatical words
-        if (POS_TAGS_TO_IGNORE.contains(token.getPartOfSpeech())) {
-          continue;
-        }
-
-        // Ignore user words list
-        if (ignoreWordsSet.contains(token.getTextForm()) || ignoreWordsSet.contains(token.getCanonicalForm())) {
-          continue;
-        }
-
-        // Ignore words that are not in dictionary
-        List<JijiDictionaryEntry> defs = dict.getMeaning(token.getCanonicalForm());
-        if (defs.isEmpty()) {
-          defs = dict.getMeaning(token.getTextForm());
-        }
-        if (defs.isEmpty()) {
-          continue;
-        }
-
-        // If all is good, add definitions to subtitle annotation
+      for (DictionaryMatch  match : getCaptionMatches(currentCaptionText)) {
         String color = colors.iterator().next();
         Collections.rotate(colors, -1);
-        for (JijiDictionaryEntry def : defs) {
+        List<String> tokenDefs = new ArrayList<>();
+        for (JijiDictionaryEntry def : match.getDictionaryEntries()) {
           // Each definition is made of several lemmas and several senses
           // Depending on "displayOtherLemma" option, display only the lemma corresponding to the subtitle word, or all lemmas
           String lemmas = def.getLemmas().stream().map(l -> {
-            if (l.equals(token.getCanonicalForm()) || l.equals(token.getTextForm())) {
+            if (l.equals(match.getCanonicalForm()) || l.equals(match.getTextForm())) {
               return SubtitleService.addStyleToText(l, SubtitleService.TextStyle.COLOR, color);
             } else if (displayOtherLemma) {
               return l;
@@ -161,11 +187,14 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
             pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
           }
 
-          annotations.add("★ " + lemmas + langLevelStr + pronounciationStr + String.join(" --- ", senses));
+          tokenDefs.add("★ " + lemmas + pronounciationStr + langLevelStr + String.join(" --- ", senses));
         }
 
-        // Set a different color for words that are defined
-        subtitleService.colorizeCaptionWord(token.getTextForm(), color);
+        if (!tokenDefs.isEmpty()) {
+          annotations.addAll(tokenDefs);
+          // Set a different color for words that are defined
+          subtitleService.colorizeCaptionWord(match.getTextForm(), color);
+        }
       }
 
       if (annotations.size() > 0) {

@@ -99,7 +99,7 @@ public class JijiDictionary {
     }
   }
 
-  public List<JijiDictionaryEntry> getMeaning(String w) {
+  public List<JijiDictionaryEntry> getEntriesForWord(String w) {
     if (entries.containsKey(w)) {
       return entries.get(w);
     } else {

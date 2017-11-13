@@ -11,6 +11,9 @@ properNouns:
   芭子: はこ
   綾: あや
   大石: おおいし
+ignoreFrequencies:
+- 1
+- 2
 ignoreWords:      |
   いける
   ランジェリー
