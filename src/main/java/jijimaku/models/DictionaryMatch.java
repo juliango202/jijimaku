@@ -30,4 +30,8 @@ public class DictionaryMatch {
   public List<JijiDictionaryEntry> getDictionaryEntries() {
     return dictionaryEntries;
   }
+
+  public List<TextToken> getTokens() {
+    return tokens;
+  }
 }

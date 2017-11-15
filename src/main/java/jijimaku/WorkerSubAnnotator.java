@@ -17,7 +17,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import jijimaku.models.DictionaryMatch;
-import jijimaku.services.langparser.LangParser;
 import jijimaku.services.langparser.LangParser.TextToken;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -97,47 +96,85 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   }
 
   /**
-   * Return all the dictionary matches for one caption.
-   * A syntaxic parse of the caption returns a list of tokens.
-   * Next we must group tokens together if they is a corresponding definition in the dictionary.
+   * @return a DictionaryMatch entry if the provided tokens match a definition, null otherwise.
    */
-  private List<DictionaryMatch> getCaptionMatches(String caption) {
-
-    List<DictionaryMatch> matches = new ArrayList<>();
-    for(TextToken token : langParser.syntaxicParse(caption)) {
-      // Ignore unimportant grammatical words
-      if (POS_TAGS_TO_IGNORE.contains(token.getPartOfSpeech())) {
-        continue;
-      }
-
-      // Ignore words that are not in dictionary
-      List<JijiDictionaryEntry> defs = dict.getEntriesForWord(token.getCanonicalForm());
-      if (defs.isEmpty()) {
-        defs = dict.getEntriesForWord(token.getTextForm());
-      }
-      if (defs.isEmpty()) {
-        continue;
-      }
-
-      // Ignore user words list
-      if (ignoreWordsSet.contains(token.getTextForm()) || ignoreWordsSet.contains(token.getCanonicalForm())) {
-        continue;
-      }
-
-      // Filter definitions depending on user ignoreFrequency option
-      List<JijiDictionaryEntry> validDefs = defs.stream()
-          .filter(d -> d.getFrequency() == null || !config.getIgnoreFrequencies().contains(d.getFrequency()))
-          .collect(Collectors.toList());
-      if (validDefs.isEmpty()) {
-        continue;
-      }
-
-      DictionaryMatch match = new DictionaryMatch(Arrays.asList(token), validDefs);
-      matches.add(match);
+  private DictionaryMatch dictionaryMatch(List<TextToken> tokens) {
+    if (tokens.isEmpty()) {
+      return null;
     }
 
+    String canonicalForm = tokens.stream().map(TextToken::getCanonicalForm).collect(Collectors.joining(""));
+    List<JijiDictionaryEntry> entries = dict.getEntriesForWord(canonicalForm);
+    if (entries.isEmpty()) {
+      String textForm = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining(""));
+      entries = dict.getEntriesForWord(textForm);
+    }
+
+    if (entries.isEmpty()) {
+      return null;
+    } else {
+      return new DictionaryMatch(tokens, entries);
+    }
+  }
+
+  /**
+   * Return all the dictionary matches for one caption.
+   * For example the parsed sentence => I|think|he|made|it|up should likely return four
+   * DictionaryMatches => I|to think|he|to make it up
+   */
+  private List<DictionaryMatch> getDictionaryMatches(String caption) {
+    // A syntaxic parse of the caption returns a list of tokens.
+    List<TextToken> captionTokens = langParser.syntaxicParse(caption);
+
+    // Next we must group tokens together if they is a corresponding definition in the dictionary.
+    List<DictionaryMatch> matches = new ArrayList<>();
+    while (!captionTokens.isEmpty()) {
+      // Find the next DictionaryMatch
+      // Start with all tokens and remove one by one until we have a match
+      List<TextToken> maximumTokens = new ArrayList<>(captionTokens);
+      DictionaryMatch match = dictionaryMatch(maximumTokens);
+      while (match == null && maximumTokens.size() > 0) {
+        maximumTokens = maximumTokens.subList(0, maximumTokens.size() - 1);
+        match = dictionaryMatch(maximumTokens);
+      }
+
+      if (match == null) {
+        // We could not find a match for current token, just remove it
+        captionTokens = captionTokens.subList(1, captionTokens.size());
+      } else {
+        matches.add(match);
+        captionTokens = captionTokens.subList(match.getTokens().size(), captionTokens.size());
+      }
+    }
     return matches;
   }
+
+  /**
+   * Filter the DictionaryMatches to display depending on user preferences.
+   */
+  private List<DictionaryMatch> getFilteredMatches(String caption) {
+    List<DictionaryMatch> allMatches = getDictionaryMatches(caption);
+    return allMatches.stream().filter(dm -> {
+
+      // Ignore user words list
+      if (ignoreWordsSet.contains(dm.getTextForm()) || ignoreWordsSet.contains(dm.getCanonicalForm())) {
+        return false;
+      }
+
+      // Ignore unimportant grammatical words
+      if (dm.getTokens().stream().allMatch(t -> POS_TAGS_TO_IGNORE.contains(t.getPartOfSpeech()))) {
+        return false;
+      }
+
+      // Filter using ignoreFrequency option
+      if (dm.getDictionaryEntries().stream().allMatch(de -> config.getIgnoreFrequencies().contains(de.getFrequency()))) {
+        return false;
+      }
+
+      return true;
+    }).collect(Collectors.toList());
+  }
+
 
   // Return true if file was annotated, false otherwise
   private boolean annotateSubtitleFile(File f) throws IOException, FatalParsingException {
@@ -156,9 +193,9 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
       // Parse subtitle and lookup definitions
       List<String> annotations = new ArrayList<>();
-      for (DictionaryMatch  match : getCaptionMatches(currentCaptionText)) {
+      for (DictionaryMatch  match : getFilteredMatches(currentCaptionText)) {
         String color = colors.iterator().next();
-        Collections.rotate(colors, -1);
+
         List<String> tokenDefs = new ArrayList<>();
         for (JijiDictionaryEntry def : match.getDictionaryEntries()) {
           // Each definition is made of several lemmas and several senses
@@ -193,7 +230,10 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         if (!tokenDefs.isEmpty()) {
           annotations.addAll(tokenDefs);
           // Set a different color for words that are defined
-          subtitleService.colorizeCaptionWord(match.getTextForm(), color);
+          match.getTokens().forEach(t -> {
+            subtitleService.colorizeCaptionWord(t.getTextForm(), color);
+          });
+          Collections.rotate(colors, -1);
         }
       }
 

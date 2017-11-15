@@ -167,6 +167,9 @@ public class Config {
    * Ignore words if their frequency is one of the list.
    */
   public List<Integer> getIgnoreFrequencies() {
+    if (ignoreFrequencies != null && ignoreFrequencies.contains(null)) {
+      throw new AssertionError("ignoreFrequencies list should not contain null");
+    }
     return ignoreFrequencies != null ? ignoreFrequencies : new ArrayList<>();
   }
 }
