@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -42,6 +41,13 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
   private File searchDirectory;
   private Config config;
+
+  // POS tag that does not represent words
+  private static final EnumSet<PosTag> POS_TAGS_NOT_WORD = EnumSet.of(
+          PosTag.PUNCTUATION,
+          PosTag.SYMBOL,
+          PosTag.NUMERAL
+  );
 
   private static final EnumSet<PosTag> POS_TAGS_TO_IGNORE = EnumSet.of(
       PosTag.PUNCTUATION,
@@ -129,6 +135,13 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     // Next we must group tokens together if they is a corresponding definition in the dictionary.
     List<DictionaryMatch> matches = new ArrayList<>();
     while (!captionTokens.isEmpty()) {
+
+      // Skip token that are not words
+      if (POS_TAGS_NOT_WORD.contains(captionTokens.get(0).getPartOfSpeech())) {
+        captionTokens = captionTokens.subList(1, captionTokens.size());
+        continue;
+      }
+
       // Find the next DictionaryMatch
       // Start with all tokens and remove one by one until we have a match
       List<TextToken> maximumTokens = new ArrayList<>(captionTokens);
@@ -230,9 +243,14 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         if (!tokenDefs.isEmpty()) {
           annotations.addAll(tokenDefs);
           // Set a different color for words that are defined
-          match.getTokens().forEach(t -> {
-            subtitleService.colorizeCaptionWord(t.getTextForm(), color);
-          });
+          int i = 0;
+          for( TextToken tok : match.getTokens()) {
+            boolean isFirst = i ==0;
+            boolean isLast = i == match.getTokens().size() -1;
+            subtitleService.colorizeFirstLast(tok.getTextForm(), color, isFirst, isLast);
+            i++;
+          }
+
           Collections.rotate(colors, -1);
         }
       }

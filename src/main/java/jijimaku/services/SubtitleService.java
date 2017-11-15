@@ -144,6 +144,18 @@ public class SubtitleService {
     currentCaptionEntry.getValue().content = currentCaptionEntry.getValue().content.replace(word, colorizedWord);
   }
 
+  public void colorizeFirstLast(String word, String htmlHexColor, boolean isFirst, boolean isLast) {
+    String colorizedWord = addStyleToText(word, TextStyle.COLOR, htmlHexColor);
+    String repl = colorizedWord + '.';
+    if (isFirst) {
+      repl = '[' + repl;
+    }
+    if (isLast) {
+      repl = repl + ']';
+    }
+    currentCaptionEntry.getValue().content = currentCaptionEntry.getValue().content.replace(word, repl);
+  }
+
   public void addAnnotationCaption(SubStyle style, String annotationStr) {
     // When adding a new caption to the subtitle we must find a key(int time) not yet used
     Integer time = currentCaptionEntry.getKey() + 1;

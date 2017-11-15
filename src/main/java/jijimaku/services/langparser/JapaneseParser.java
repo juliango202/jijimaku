@@ -2,9 +2,10 @@ package jijimaku.services.langparser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.atilika.kuromoji.unidic.Token;
 import com.atilika.kuromoji.unidic.Tokenizer;
@@ -18,6 +19,14 @@ import jijimaku.services.Config;
 
 public class JapaneseParser implements LangParser {
   private static final String MISSING_FORM = "*";
+
+  private static final List<String> PUNCTUATION_TOKENS = Arrays.asList(
+      "｡", "…｡", "｢", "｣", "（", "）"
+  );
+
+  private static final List<String> RENTAISHI_DET = Arrays.asList(
+          "その", "どの", "この"
+  );
 
   private Tokenizer tokenizer;
 
@@ -45,72 +54,59 @@ public class JapaneseParser implements LangParser {
     }
   }
 
+  /**
+   * Return the universal dependency Part Of Speech tag for a given token.
+   * The source for Japanese word feature to Universal Dependency mapping
+   * is http://universaldependencies.org/ja/overview/morphology.html
+   */
+  private PosTag getTokenPosTag(Token token, String writtenForm) {
+    // Get the word features from kuromoji (index 0 & 1 corresponds to japanese grammatical type & subtype)
+    String[] features = token.getAllFeaturesArray();
+
+    // Strangely Kuromoji does not classify correctly some punctuation ?
+    // Force punctuation characters to be classified as punctuation
+    if (PUNCTUATION_TOKENS.contains(writtenForm)) {
+      return PosTag.PUNCT;
+    }
+
+    switch (features[1]) {
+      case "数詞":
+        return PosTag.NUM;
+    }
+
+    switch (features[0]) {
+      case "連体詞":
+        return RENTAISHI_DET.contains(writtenForm) ? PosTag.DET : PosTag.ADJ;
+      case "形容詞":
+      case "形状詞":
+        return PosTag.ADJ;
+      case "副詞":
+        return PosTag.ADV;
+      case "感動詞":
+        return PosTag.INTJ;
+
+      default:
+        return PosTag.UNKNOWN;
+    }
+  }
+
   public List<TextToken> syntaxicParse(String text) {
 
     // We use kuromoji-unidoct as parsing dictionary (larger)
     // to use the default ipadic, replace the kuromoji JAR and use the following code instead:
     // Tokenizer tokenizer = Tokenizer.builder().mode(Mode.SEARCH).build(); then => token.getBaseForm()
 
-    List<TextToken> tokens = new ArrayList<>();
-    for (Token token : tokenizer.tokenize(text)) {
-      // Get the word features from kuromoji (index 0 & 1 corresponds to grammatical type & subtype)
-      String[] features = token.getAllFeaturesArray();
-
-      // Try to identify token type from Kuromoji subtype first(more precise)
-      PosTag tag;
-      switch (features[1]) {
-        case "数詞":
-          tag = PosTag.NUMERAL;
-          break;
-        default:
-          tag = PosTag.UNKNOWN;
-      }
-      if (tag == PosTag.UNKNOWN) {
-        switch (features[0]) {
-          case "空白":
-            tag = PosTag.PUNCTUATION;
-            break;
-          case "記号":
-            tag = PosTag.PUNCTUATION;
-            break;
-          case "助詞":
-            tag = PosTag.PARTICLE;
-            break;
-          case "助動詞":
-            tag = PosTag.AUXILIARY_VERB;
-            break;
-          case "接尾辞":
-            tag = PosTag.SUFFIX;
-            break;
-          case "補助記号":
-            tag = PosTag.SYMBOL;
-            break;
-          case "連体詞":
-            tag = PosTag.DETERMINER;
-            break;
-          case "接続詞":
-            tag = PosTag.CONJUNCTION;
-            break;
-          default:
-            tag = PosTag.UNKNOWN;
-        }
-      }
-
+    return tokenizer.tokenize(text).stream().map(token -> {
+      // Map Kuromoji results to our custom TextToken class
       String writtenForm = !token.getWrittenForm().equals(MISSING_FORM)
-          ? token.getWrittenForm()
-          : token.getSurface();
+              ? token.getWrittenForm()
+              : token.getSurface();
       String writtenBaseForm = !token.getWrittenBaseForm().equals(MISSING_FORM)
-          ? token.getWrittenBaseForm()
-          : null;
-
-      // Fix kuromoji POS tag for japanese punctuation '｡'
-      if (writtenForm.equals("｡") || writtenForm.equals("…｡")) {
-        tag = PosTag.PUNCTUATION;
-      }
-
-      tokens.add(new TextToken(tag, writtenForm, writtenBaseForm));
-    }
-    return tokens;
+              ? token.getWrittenBaseForm()
+              : null;
+      PosTag pos = getTokenPosTag(token, writtenForm);
+      return new TextToken(pos, writtenForm, writtenBaseForm);
+    }).collect(Collectors.toList());
   }
 }
 

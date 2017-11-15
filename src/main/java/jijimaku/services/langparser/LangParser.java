@@ -9,17 +9,25 @@ public interface LangParser {
 
   // Part Of Speech universal tags
   // TODO: use universal Dependencies tags: http://universaldependencies.org/ja/overview/morphology.html
+  // See http://universaldependencies.org/u/pos/all.html
   enum PosTag {
-    PUNCTUATION,
-    SYMBOL,
-    NUMERAL,
-    PARTICLE,
-    DETERMINER,     // a modifying word that determines the kind of reference a noun or noun group has, for example a, the, every.
-    CONJUNCTION,
-    AUXILIARY_VERB,
-    SUFFIX,
-    //ADJECTIVE,
-    //NOUN,
+    ADJ,    // adjective
+    ADV,    // adverb
+    INTJ,   // interjection
+    NOUN,   // noun
+    PROPN,  // proper noun
+    VERB,   // verb
+    ADP,    // adposition
+    AUX,    // auxiliary
+    CCONJ,  // coordinating conjunction
+    DET,    // determiner
+    NUM,    // numeral
+    PART,   // particle
+    PRON,   // pronoun
+    SCONJ,  // subordinating conjunction
+    PUNCT,  // punctuation
+    SYM,    // symbol
+    X,      // other
     UNKNOWN
   }
 
