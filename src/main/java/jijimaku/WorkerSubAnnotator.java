@@ -71,7 +71,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
    * Swing worker to search and annotate the subtitle files.
    * @param searchDirectory disk directory where to search subtitles(recursive)
    */
-  public WorkerSubAnnotator(File searchDirectory) {
+  WorkerSubAnnotator(File searchDirectory) {
     if (searchDirectory == null || !searchDirectory.isDirectory()) {
       LOGGER.error("Invalid search directory {}", String.valueOf(searchDirectory));
       throw new UnexpectedError();
@@ -89,14 +89,34 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   // This is a quite heavy operation so it should be launched from background thread
   private void doInitialization() {
     LOGGER.info("-------------------------- Initialization --------------------------");
+    String jarDirectory = new File(getClass().getProtectionDomain().getCodeSource().getLocation().getPath()).getParent();
+    LOGGER.debug("JAR directory seems to be {}", jarDirectory);
+
     // Load configuration
     LOGGER.info("Loading configuration...");
-    this.config = new Config(AppConst.CONFIG_FILE);
+    File configFile = new File(AppConst.CONFIG_FILE);
+    if (!configFile.exists()) {
+      configFile = new File(jarDirectory + "/" + AppConst.CONFIG_FILE);
+    }
+    if (!configFile.exists()) {
+      LOGGER.error("Could not find config file {} in directory {}", AppConst.CONFIG_FILE, jarDirectory);
+      throw new UnexpectedError();
+    }
+
+    this.config = new Config(configFile);
     this.ignoreWordsSet = config.getIgnoreWords();
 
     // Initialize dictionary
     LOGGER.info("Loading dictionnary...");
-    dict = new JijiDictionary(config.getJijiDictionary());
+    File dictionaryFile = new File(config.getJijiDictionary());
+    if (!dictionaryFile.exists()) {
+      dictionaryFile = new File(jarDirectory + "/" + config.getJijiDictionary());
+    }
+    if (!dictionaryFile.exists()) {
+      LOGGER.error("Could not find the dictionary file {} in directory {}", config.getJijiDictionary(), jarDirectory);
+      throw new UnexpectedError();
+    }
+    dict = new JijiDictionary(dictionaryFile);
 
     // Initialize parser
     LOGGER.info("Instantiate parser...");
@@ -261,7 +281,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
           String pronounciationStr = "";
           if (def.getPronounciation() != null) {
             // Do not display pronounciation information if it is already present in lemmas
-            boolean inLemma = def.getPronounciation().stream().anyMatch(p -> lemmas.contains(p));
+            boolean inLemma = def.getPronounciation().stream().anyMatch(lemmas::contains);
             if (!inLemma) {
               pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
             }

@@ -49,10 +49,10 @@ public class JijiDictionary {
   private Map<String, List<JijiDictionaryEntry>> entriesByPronunciation = new HashMap<>();
 
   @SuppressWarnings("unchecked")
-  public JijiDictionary(String jijiDictFile) {
+  public JijiDictionary(File jijiDictFile) {
     try {
       Yaml yaml = new Yaml();
-      InputStream stream = FileManager.getUtf8Stream(new File(jijiDictFile));
+      InputStream stream = FileManager.getUtf8Stream(jijiDictFile);
       Map<String, Object> yamlMap = (Map<String, Object>) yaml.load(stream);
       yamlMap.keySet().stream().forEach(key -> {
         if (!key.equals(DICTIONARY_INFO_KEY)) {
@@ -106,7 +106,7 @@ public class JijiDictionary {
         }
       });
     } catch (IOException exc) {
-      LOGGER.error("Problem reading jijiDictFile {}", jijiDictFile);
+      LOGGER.error("Problem reading jijiDictFile {}", jijiDictFile.getAbsolutePath());
       LOGGER.debug("Exception details", exc);
       throw new UnexpectedError();
     }

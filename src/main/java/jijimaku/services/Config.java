@@ -43,13 +43,13 @@ public class Config {
   /**
    * Read user preferences from a YAML config file.
    */
-  public Config(String configFilePath) {
-    this.configFilePath = configFilePath;
+  public Config(File configFile) {
+    this.configFilePath = configFile.getAbsolutePath();
 
     // Parse YAML file
     try {
       Yaml yaml = new Yaml();
-      InputStream stream = FileManager.getUtf8Stream(new File(configFilePath));
+      InputStream stream = FileManager.getUtf8Stream(configFile);
       configMap = (new HashMap<String, Object>()).getClass().cast(yaml.load(stream));
     } catch (IOException | ClassCastException exc) {
       LOGGER.error("Problem reading YAML config {}", configFilePath);
