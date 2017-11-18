@@ -29,7 +29,6 @@ import subtitleFile.TimedTextFileFormat;
 import subtitleFile.TimedTextObject;
 
 
-
 /**
  * A class to work with ASS/SRT subtitle files.
  * Underwood for now we use the multi-format subtitle library https://github.com/JDaren/subtitleConverter
@@ -144,16 +143,26 @@ public class SubtitleService {
     currentCaptionEntry.getValue().content = currentCaptionEntry.getValue().content.replace(word, colorizedWord);
   }
 
-  public void colorizeFirstLast(String word, String htmlHexColor, boolean isFirst, boolean isLast) {
-    String colorizedWord = addStyleToText(word, TextStyle.COLOR, htmlHexColor);
-    String repl = colorizedWord + '.';
-    if (isFirst) {
-      repl = '[' + repl;
+
+  public void addJijimakuMark() {
+    Integer firstCaptionTimeMs = tto.captions.entrySet().iterator().next().getKey();
+    if (firstCaptionTimeMs == 0) {
+      // Rare case, give up
+      return;
     }
-    if (isLast) {
-      repl = repl + ']';
+
+    // Caption is read from recource file
+    TimedTextFileFormat ttff = new FormatASS();
+    try {
+      TimedTextObject tto = ttff.parseFile("", getClass().getClassLoader().getResourceAsStream("JijimakuMark.ass"));
+      Caption jijimakuMark = tto.captions.values().iterator().next();
+      jijimakuMark.content = "★ Definitions by {\\c&AAAAFF&}{\\b1}JIJIMAKU{\\r} using {\\c&FFAAAA&}Jim's Breen Japanese dictionary{\\r}";
+      annotationCaptions.put(0, jijimakuMark);
+    } catch (IOException exc) {
+      LOGGER.error("Cannot read JijimakuMark.ass.", exc);
+    } catch (FatalParsingException exc) {
+      LOGGER.error("Cannot parse JijimakuMark.ass.", exc);
     }
-    currentCaptionEntry.getValue().content = currentCaptionEntry.getValue().content.replace(word, repl);
   }
 
   public void addAnnotationCaption(SubStyle style, String annotationStr) {
@@ -173,9 +182,7 @@ public class SubtitleService {
   public void writeToAss(String outFile) throws IOException {
     // Fix newline problem while https://github.com/JDaren/subtitleConverter/issues/36 is not resolved
     // --------------------------------------------
-    Iterator<Map.Entry<Integer, Caption>> it = tto.captions.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry<Integer, Caption> caption = it.next();
+    for (Map.Entry<Integer, Caption> caption : tto.captions.entrySet()) {
       caption.getValue().content = caption.getValue().content.replaceAll("<br\\s*/?>", "\\\\N");
     }
     // --------------------------------------------

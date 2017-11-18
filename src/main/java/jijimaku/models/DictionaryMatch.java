@@ -1,10 +1,10 @@
 package jijimaku.models;
 
-import jijimaku.services.jijidictionary.JijiDictionaryEntry;
-import jijimaku.services.langparser.LangParser.TextToken;
-
 import java.util.List;
 import java.util.stream.Collectors;
+
+import jijimaku.services.jijidictionary.JijiDictionaryEntry;
+import jijimaku.services.langparser.LangParser.TextToken;
 
 /**
  * A DictionaryMatch represent a list of successive text tokens that together

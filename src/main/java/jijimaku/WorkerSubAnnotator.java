@@ -11,18 +11,18 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
-import jijimaku.models.DictionaryMatch;
-import jijimaku.services.langparser.LangParser.TextToken;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jijimaku.errors.UnexpectedError;
+import jijimaku.models.DictionaryMatch;
 import jijimaku.services.Config;
 import jijimaku.services.SubtitleService;
 import jijimaku.services.SubtitleService.SubStyle;
@@ -30,6 +30,7 @@ import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.jijidictionary.JijiDictionaryEntry;
 import jijimaku.services.langparser.JapaneseParser;
 import jijimaku.services.langparser.LangParser.PosTag;
+import jijimaku.services.langparser.LangParser.TextToken;
 
 import subtitleFile.FatalParsingException;
 
@@ -38,26 +39,32 @@ import subtitleFile.FatalParsingException;
 // Background task that annotates a subtitle file with words definition
 public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^\\p{IsHiragana}+$");
 
   private File searchDirectory;
   private Config config;
 
   // POS tag that does not represent words
   private static final EnumSet<PosTag> POS_TAGS_NOT_WORD = EnumSet.of(
-          PosTag.PUNCTUATION,
-          PosTag.SYMBOL,
-          PosTag.NUMERAL
+      PosTag.PUNCT,
+      PosTag.SYM,
+      PosTag.NUM,
+      PosTag.X
   );
 
-  private static final EnumSet<PosTag> POS_TAGS_TO_IGNORE = EnumSet.of(
-      PosTag.PUNCTUATION,
-      PosTag.SYMBOL,
-      PosTag.NUMERAL,
-      PosTag.PARTICLE,
-      PosTag.DETERMINER,
-      PosTag.CONJUNCTION,
-      PosTag.AUXILIARY_VERB,
-      PosTag.SUFFIX
+  private static final EnumSet<PosTag> ADJ_NOUN_VERB_WORD = EnumSet.of(
+      PosTag.VERB,
+      PosTag.NOUN,
+      PosTag.ADJ,
+      PosTag.PROPN
+  );
+
+  private static final EnumSet<PosTag> POS_TAGS_IGNORE_WORD = EnumSet.of(
+      PosTag.PART,
+      PosTag.DET,
+      PosTag.CCONJ,
+      PosTag.SCONJ,
+      PosTag.AUX
   );
 
   /**
@@ -102,6 +109,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   }
 
   /**
+   * Search a list of tokens in the dictionary.
    * @return a DictionaryMatch entry if the provided tokens match a definition, null otherwise.
    */
   private DictionaryMatch dictionaryMatch(List<TextToken> tokens) {
@@ -110,10 +118,20 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     }
 
     String canonicalForm = tokens.stream().map(TextToken::getCanonicalForm).collect(Collectors.joining(""));
-    List<JijiDictionaryEntry> entries = dict.getEntriesForWord(canonicalForm);
+    List<JijiDictionaryEntry> entries = dict.search(canonicalForm);
+
+    // If there is no entry for the canonical form, search the exact text
     if (entries.isEmpty()) {
       String textForm = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining(""));
-      entries = dict.getEntriesForWord(textForm);
+      entries = dict.search(textForm);
+    }
+
+    // If still no entry, search for the pronunciation
+    // In Japanese sometimes words with kanji are written in kanas for emphasis or simplicity
+    // and we want to catch those. Except for one character strings where there are too many results
+    // for this to be relevant.
+    if (entries.isEmpty() && canonicalForm.length() > 1) {
+      entries = dict.searchByPronunciation(canonicalForm);
     }
 
     if (entries.isEmpty()) {
@@ -174,8 +192,16 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
         return false;
       }
 
+      // Special case for Japanese, ignore kana words of 3 syllabs or less that are not a verb, noun, or adjective
+      // This is because the detection of these words is often a mistake(kanas of other constructs are wrongly assembled)
+      // and a casual reader of Japanese is assumed to already know them
+      boolean isGrammar = !ADJ_NOUN_VERB_WORD.contains(dm.getTokens().get(0).getPartOfSpeech());
+      if (isGrammar && dm.getTextForm().length() <= 3 && IS_HIRAGANA_RE.matcher(dm.getTextForm()).matches()) {
+        return false;
+      }
+
       // Ignore unimportant grammatical words
-      if (dm.getTokens().stream().allMatch(t -> POS_TAGS_TO_IGNORE.contains(t.getPartOfSpeech()))) {
+      if (dm.getTokens().stream().allMatch(t -> POS_TAGS_IGNORE_WORD.contains(t.getPartOfSpeech()))) {
         return false;
       }
 
@@ -205,10 +231,10 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
       subtitleService.setCaptionStyle();
 
       // Parse subtitle and lookup definitions
+      List<String> alreadyDefinedWords = new ArrayList<>();
       List<String> annotations = new ArrayList<>();
       for (DictionaryMatch  match : getFilteredMatches(currentCaptionText)) {
         String color = colors.iterator().next();
-
         List<String> tokenDefs = new ArrayList<>();
         for (JijiDictionaryEntry def : match.getDictionaryEntries()) {
           // Each definition is made of several lemmas and several senses
@@ -234,29 +260,28 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
           String pronounciationStr = "";
           if (def.getPronounciation() != null) {
-            pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
+            // Do not display pronounciation information if it is already present in lemmas
+            boolean inLemma = def.getPronounciation().stream().anyMatch(p -> lemmas.contains(p));
+            if (!inLemma) {
+              pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
+            }
           }
 
           tokenDefs.add("★ " + lemmas + pronounciationStr + langLevelStr + String.join(" --- ", senses));
         }
 
-        if (!tokenDefs.isEmpty()) {
+        if (!tokenDefs.isEmpty() && !alreadyDefinedWords.contains(match.getTextForm())) {
           annotations.addAll(tokenDefs);
           // Set a different color for words that are defined
-          int i = 0;
-          for( TextToken tok : match.getTokens()) {
-            boolean isFirst = i ==0;
-            boolean isLast = i == match.getTokens().size() -1;
-            subtitleService.colorizeFirstLast(tok.getTextForm(), color, isFirst, isLast);
-            i++;
-          }
-
+          subtitleService.colorizeCaptionWord(match.getTextForm(), color);
           Collections.rotate(colors, -1);
+          alreadyDefinedWords.add(match.getTextForm());
         }
       }
 
       if (annotations.size() > 0) {
         nbAnnotations += annotations.size();
+        subtitleService.addJijimakuMark();
         subtitleService.addAnnotationCaption(SubStyle.Definition, String.join("\\N", annotations));
       }
     }

@@ -40,12 +40,13 @@ public class JijiDictionary {
   private static final String DICTIONARY_INFO_KEY = "about_this_dictionary";
   private static final String SENSE_KEY = "sense";
   private static final String SENSES_KEY = "senses";
-  private static final String PRONOUNCIATION_KEY = "pronounciation";
+  private static final String PRONUNCIATION_KEY = "pronunciation";
   private static final String FREQUENCY_KEY = "frequency";
   private static final String LEMMAS_SPLIT_RE = "\\s*,\\s*";
-  private static final String PRONOUNCIATION_SPLIT_RE = "\\s*,\\s*";
+  private static final String PRONUNCIATION_SPLIT_RE = "\\s*,\\s*";
 
-  private Map<String, List<JijiDictionaryEntry>> entries = new HashMap<>();
+  private Map<String, List<JijiDictionaryEntry>> entriesByLemma = new HashMap<>();
+  private Map<String, List<JijiDictionaryEntry>> entriesByPronunciation = new HashMap<>();
 
   @SuppressWarnings("unchecked")
   public JijiDictionary(String jijiDictFile) {
@@ -61,7 +62,7 @@ public class JijiDictionary {
 
           // Parse senses
           List<String> senses = new ArrayList<>();
-          List<String> pronounciation = null;
+          List<String> pronunciations = null;
           if (entryMap.containsKey(SENSE_KEY)) {
             senses.add((String)entryMap.get(SENSE_KEY));
           } else if (entryMap.containsKey(SENSES_KEY)) {
@@ -71,9 +72,9 @@ public class JijiDictionary {
             return;
           }
 
-          if (entryMap.containsKey(PRONOUNCIATION_KEY)) {
-            String pronounciationStr = ((String)entryMap.get(PRONOUNCIATION_KEY));
-            pronounciation = Arrays.asList(pronounciationStr.split(PRONOUNCIATION_SPLIT_RE));
+          if (entryMap.containsKey(PRONUNCIATION_KEY)) {
+            String pronunciationStr = ((String)entryMap.get(PRONUNCIATION_KEY));
+            pronunciations = Arrays.asList(pronunciationStr.split(PRONUNCIATION_SPLIT_RE));
           }
 
           // Parse frequency
@@ -81,14 +82,26 @@ public class JijiDictionary {
               ? (Integer)entryMap.get(FREQUENCY_KEY)
               : null;
 
-          // Create Jiji dictionary entry and index it for each lemma
+          // Create Jiji dictionary entry
           List<String> lemmas = Arrays.asList(key.split(LEMMAS_SPLIT_RE));
-          JijiDictionaryEntry jijiEntry = new JijiDictionaryEntry(lemmas, frequency, senses, pronounciation);
+          JijiDictionaryEntry jijiEntry = new JijiDictionaryEntry(lemmas, frequency, senses, pronunciations);
+
+          // Index entries by lemma
           for (String lemma : lemmas) {
-            if (!entries.containsKey(lemma)) {
-              entries.put(lemma, new ArrayList<>());
+            if (!entriesByLemma.containsKey(lemma)) {
+              entriesByLemma.put(lemma, new ArrayList<>());
             }
-            entries.get(lemma).add(jijiEntry);
+            entriesByLemma.get(lemma).add(jijiEntry);
+          }
+
+          // Index entries by pronunciation
+          if (pronunciations != null) {
+            for (String pronunciation : pronunciations) {
+              if (!entriesByPronunciation.containsKey(pronunciation)) {
+                entriesByPronunciation.put(pronunciation, new ArrayList<>());
+              }
+              entriesByPronunciation.get(pronunciation).add(jijiEntry);
+            }
           }
         }
       });
@@ -99,9 +112,23 @@ public class JijiDictionary {
     }
   }
 
-  public List<JijiDictionaryEntry> getEntriesForWord(String w) {
-    if (entries.containsKey(w)) {
-      return entries.get(w);
+  /**
+   * Search for a lemma in the dictionary.
+   */
+  public List<JijiDictionaryEntry> search(String w) {
+    if (entriesByLemma.containsKey(w)) {
+      return entriesByLemma.get(w);
+    } else {
+      return java.util.Collections.emptyList();
+    }
+  }
+
+  /**
+   * Search an entry by pronounciation.
+   */
+  public List<JijiDictionaryEntry> searchByPronunciation(String p) {
+    if (entriesByPronunciation.containsKey(p)) {
+      return entriesByPronunciation.get(p);
     } else {
       return java.util.Collections.emptyList();
     }
