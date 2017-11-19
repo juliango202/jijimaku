@@ -31,7 +31,7 @@ public class JapaneseParser implements LangParser {
   );
 
   private static final List<String> PART_OF_VERB_CONJUNCTIONS = Arrays.asList(
-      "て", "で"
+      "て", "で", "ちゃ"
   );
 
   private static final List<String> NOUN_CONJUNCTIONS = Arrays.asList(
@@ -165,7 +165,7 @@ public class JapaneseParser implements LangParser {
     // First pass with kuromoji library
     List<TextToken> tokens = kuromojiParse(text);
 
-    // In a second pass we want to merge VERBS/AUX token with the following SCONJ & AUX tokens
+    // In a second pass we want to merge some SCONJ with the previous VERBS/AUX
     // This is so that for example 継ぎ-まし-て appears as one word in the subtitles
     List<TextToken> filteredTokens = new ArrayList<>();
     for (int i = 0; i < tokens.size(); i++) {
@@ -174,7 +174,7 @@ public class JapaneseParser implements LangParser {
       boolean isPartOfVerbConj = (token.getPartOfSpeech() == PosTag.SCONJ && PART_OF_VERB_CONJUNCTIONS.contains(token.getTextForm()));
       if (lastOk != null
           && (lastOk.getPartOfSpeech() == PosTag.AUX || lastOk.getPartOfSpeech() == PosTag.VERB)
-          && (token.getPartOfSpeech()  == PosTag.AUX || isPartOfVerbConj)) {
+          && isPartOfVerbConj) {
         TextToken completeVerb = new TextToken(lastOk.getPartOfSpeech(), lastOk.getTextForm() + token.getTextForm(), lastOk.getCanonicalForm());
         filteredTokens.set(filteredTokens.size() - 1, completeVerb);
         continue;

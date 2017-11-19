@@ -192,10 +192,20 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
       if (match == null) {
         // We could not find a match for current token, just remove it
         captionTokens = captionTokens.subList(1, captionTokens.size());
-      } else {
-        matches.add(match);
-        captionTokens = captionTokens.subList(match.getTokens().size(), captionTokens.size());
+        continue;
       }
+
+      // Do not accept the match if it is a short sequence of hiragana
+      // because it is most likely a wrong grouping of independent grammar conjunctions
+      // and unlikely to be an unusual word that needs to be defined
+      if (match.getTextForm().length() <= 3 && IS_HIRAGANA_RE.matcher(match.getTextForm()).matches()) {
+        captionTokens = captionTokens.subList(1, captionTokens.size());
+        continue;
+      }
+
+      matches.add(match);
+      captionTokens = captionTokens.subList(match.getTokens().size(), captionTokens.size());
+
     }
     return matches;
   }
@@ -207,21 +217,13 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     List<DictionaryMatch> allMatches = getDictionaryMatches(caption);
     return allMatches.stream().filter(dm -> {
 
-      // Ignore user words list
-      if (ignoreWordsSet.contains(dm.getTextForm()) || ignoreWordsSet.contains(dm.getCanonicalForm())) {
-        return false;
-      }
-
-      // Special case for Japanese, ignore kana words of 3 syllabs or less that are not a verb, noun, or adjective
-      // This is because the detection of these words is often a mistake(kanas of other constructs are wrongly assembled)
-      // and a casual reader of Japanese is assumed to already know them
-      boolean isGrammar = !ADJ_NOUN_VERB_WORD.contains(dm.getTokens().get(0).getPartOfSpeech());
-      if (isGrammar && dm.getTextForm().length() <= 3 && IS_HIRAGANA_RE.matcher(dm.getTextForm()).matches()) {
-        return false;
-      }
-
       // Ignore unimportant grammatical words
       if (dm.getTokens().stream().allMatch(t -> POS_TAGS_IGNORE_WORD.contains(t.getPartOfSpeech()))) {
+        return false;
+      }
+
+      // Ignore user words list
+      if (ignoreWordsSet.contains(dm.getTextForm()) || ignoreWordsSet.contains(dm.getCanonicalForm())) {
         return false;
       }
 
@@ -284,6 +286,8 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
             boolean inLemma = def.getPronounciation().stream().anyMatch(lemmas::contains);
             if (!inLemma) {
               pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
+            } else {
+              pronounciationStr = pronounciationStr;
             }
           }
 

@@ -11,6 +11,8 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
@@ -139,8 +141,27 @@ public class SubtitleService {
 
 
   public void colorizeCaptionWord(String word, String htmlHexColor) {
-    String colorizedWord = addStyleToText(word, TextStyle.COLOR, htmlHexColor);
-    currentCaptionEntry.getValue().content = currentCaptionEntry.getValue().content.replace(word, colorizedWord);
+    StringBuilder content = new StringBuilder(currentCaptionEntry.getValue().content);
+
+    // We want to find the word even if it spread over multiple lines
+    // Solution is from https://stackoverflow.com/a/9896878/257272
+    // Build a regexp with potential new line <br />* after every character
+    // except the last one.
+    // (?!$) is a negative lookahead meaning the line below
+    // won't match the last character of the String
+    String regex = word.replaceAll("(.(?!$))", "$1(?:<br />)*");
+    Matcher matcher = Pattern.compile(regex).matcher(content.toString());
+    if (!matcher.find()) {
+      LOGGER.debug("Couldn't colorize word {} because it wasn't found in {}", word, content.toString());
+      return;
+    }
+
+    String startStyle = "{\\c&" + htmlColorToAss(htmlHexColor)  + "&}";
+    content.insert(matcher.start(), startStyle);
+    String endStyle = "{\\r}";
+    content.insert(matcher.end() + startStyle.length(), endStyle);
+
+    currentCaptionEntry.getValue().content = content.toString();
   }
 
 
@@ -205,14 +226,22 @@ public class SubtitleService {
       case BOLD:
         return "{\\b1}" + str + "{\\r}";
       case COLOR:
-        String assHexColor = param.substring(5,7) + param.substring(3,5) + param.substring(1,3);
-        return "{\\c&" + assHexColor  + "&}" + str + "{\\r}";
+        return "{\\c&" + htmlColorToAss(param)  + "&}" + str + "{\\r}";
       case ZOOM:
         Integer assZoom = Math.round(Float.parseFloat(param) * 100);
         return "{\\fscx" + assZoom  + "\\fscy" + assZoom + "}" + str + "{\\r}";
       default:
         return str;
     }
+  }
+
+  // Ass color format is RGB
+
+  /**
+   * Convert a html color which is RGB to ASS color which is BGR
+   */
+  private static String htmlColorToAss(String col) {
+    return col.substring(5,7) + col.substring(3,5) + col.substring(1,3);
   }
 
   public static String addStyleToText(String str, TextStyle style) {
