@@ -52,8 +52,8 @@ public class Config {
     // Parse YAML file
     try {
       Yaml yaml = new Yaml();
-      InputStream stream = FileManager.getUtf8Stream(configFile);
-      configMap = (new HashMap<String, Object>()).getClass().cast(yaml.load(stream));
+      String yamlStr = FileManager.fileAnyEncodingToString(configFile);
+      configMap = (new HashMap<String, Object>()).getClass().cast(yaml.load(yamlStr));
     } catch (IOException | ClassCastException exc) {
       LOGGER.error("Problem reading YAML config {}", configFilePath);
       LOGGER.debug("Got exception", exc);

@@ -20,7 +20,7 @@ dependencies {
   compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.9.1'
 
   // No Maven package available, import via jitpack.io
-  compile 'com.github.JDaren:subtitleConverter:-SNAPSHOT'
+  compile 'com.github.juliango202:subtitleConverter:-SNAPSHOT'
 }
 
 jar {
