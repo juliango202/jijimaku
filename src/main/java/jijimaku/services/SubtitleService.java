@@ -92,30 +92,30 @@ public class SubtitleService {
    * Read a file and return true if it was written by us.
    * (search for app signature in first 5 lines)
    */
-  public static boolean isSubDictFile(File f) throws IOException {
-    String contents = FileManager.fileAnyEncodingToString(f);
-    return contents.contains(JIJIMAKU_SIGNATURE);
+  public static boolean isSubDictFile(String fileContents) throws IOException {
+    return fileContents.contains(JIJIMAKU_SIGNATURE);
   }
 
 
-  public void readFile(File file) throws IOException, FatalParsingException {
-    if (!FilenameUtils.getExtension(file.getName()).equals("srt") && !FilenameUtils.getExtension(file.getName()).equals("ass")) {
-      LOGGER.error("invalid subtitle file extension file: {}", file.getName());
+  public void readFile(String fileName, String fileContents) throws IOException, FatalParsingException {
+    if (!FilenameUtils.getExtension(fileName).equals("srt") && !FilenameUtils.getExtension(fileName).equals("ass")) {
+      LOGGER.error("invalid subtitle file extension file: {}", fileName);
       throw new UnexpectedError();
     }
 
     // Read subtitle file contents
-    TimedTextFileFormat ttff = FilenameUtils.getExtension(file.getName()).equals("srt")
+    TimedTextFileFormat ttff = FilenameUtils.getExtension(fileName).equals("srt")
         ? new FormatSRT()
         : new FormatASS();
-    String fileContents = FileManager.fileAnyEncodingToString(file);
+
     // Convert String to InputStream to match subtitleFile API
     byte[] byteData = fileContents.getBytes("UTF-8");
     // Must use BOMInputStream otherwise files with BOM will broke :(((
     // => http://stackoverflow.com/questions/4897876/reading-utf-8-bom-marker
-    // TODO: fix problem of stream not closed
-    BOMInputStream hophop = new BOMInputStream(new ByteArrayInputStream(byteData));
-    tto = ttff.parseFile(file.getName(), hophop, StandardCharsets.UTF_8);
+    try (BOMInputStream inputStream = new BOMInputStream(new ByteArrayInputStream(byteData))) {
+      tto = ttff.parseFile(fileName, inputStream, StandardCharsets.UTF_8);
+    }
+
     tto.styling = substyles;
     tto.description = JIJIMAKU_SIGNATURE;
     if (tto.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {
@@ -144,10 +144,8 @@ public class SubtitleService {
 
     // We want to find the word even if it spread over multiple lines
     // Solution is from https://stackoverflow.com/a/9896878/257272
-    // Build a regexp with potential new line <br />* after every character
-    // except the last one.
-    // (?!$) is a negative lookahead meaning the line below
-    // won't match the last character of the String
+    // Build a regexp with potential new line <br />* after every character except the last one.
+    // (?!$) is a negative lookahead meaning the line below won't match the last character of the String
     String regex = word.replaceAll("(.(?!$))", "$1(?:<br />)*");
     Matcher matcher = Pattern.compile(regex).matcher(content.toString());
     if (!matcher.find()) {

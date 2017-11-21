@@ -237,11 +237,11 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
 
   // Return true if file was annotated, false otherwise
-  private boolean annotateSubtitleFile(File f) throws IOException, FatalParsingException {
+  private boolean annotateSubtitleFile(String directory, String fileName, String fileContents) throws IOException, FatalParsingException {
 
     Boolean displayOtherLemma = config.getDisplayOtherLemma();
 
-    subtitleService.readFile(f);
+    subtitleService.readFile(fileName, fileContents);
 
     // Loop through the subtitle file captions one by one
     int nbAnnotations = 0;
@@ -312,7 +312,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     if (nbAnnotations == 0) {
       return false;
     }
-    subtitleService.writeToAss(f.getParent() + "/" + FilenameUtils.getBaseName(f.getName()) + ".ass");
+    subtitleService.writeToAss(directory + "/" + FilenameUtils.getBaseName(fileName) + ".ass");
     return true;
   }
 
@@ -330,12 +330,14 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     Integer nbAnnotated = 0;
     for (File fileEntry : FileUtils.listFiles(searchDirectory, VALID_SUBFILE_EXT, true)) {
       try {
-        if (fileEntry.isHidden() || SubtitleService.isSubDictFile(fileEntry)) {
+        String fileContents = FileManager.fileAnyEncodingToString(fileEntry);
+
+        if (fileEntry.isHidden() || SubtitleService.isSubDictFile(fileContents)) {
           LOGGER.debug("{} is one of our annotated subtitle, skip it.", fileEntry.getName());
           continue;
         }
         LOGGER.info("Processing " + fileEntry.getName() + "...");
-        if (annotateSubtitleFile(fileEntry)) {
+        if (annotateSubtitleFile(fileEntry.getParent(), fileEntry.getName(), fileContents)) {
           nbAnnotated++;
         } else {
           LOGGER.info("Nothing to annotate was found in this file(wrong language?)");
