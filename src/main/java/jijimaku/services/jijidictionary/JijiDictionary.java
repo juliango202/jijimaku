@@ -52,8 +52,8 @@ public class JijiDictionary {
   public JijiDictionary(File jijiDictFile) {
     try {
       Yaml yaml = new Yaml();
-      InputStream stream = FileManager.getUtf8Stream(jijiDictFile);
-      Map<String, Object> yamlMap = (Map<String, Object>) yaml.load(stream);
+      String yamlStr = FileManager.fileAnyEncodingToString(jijiDictFile);
+      Map<String, Object> yamlMap = (Map<String, Object>) yaml.load(yamlStr);
       yamlMap.keySet().stream().forEach(key -> {
         if (!key.equals(DICTIONARY_INFO_KEY)) {
 

@@ -19,7 +19,7 @@ dependencies {
   compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 
   // No Maven package available, import via jitpack.io
-  compile 'com.github.JDaren:subtitleConverter:-SNAPSHOT'
+  compile 'com.github.juliango202:subtitleConverter:-SNAPSHOT'
 }
 
 jar {

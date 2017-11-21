@@ -3,10 +3,12 @@ package jijimaku.services;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
@@ -15,6 +17,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.input.BOMInputStream;
+import org.apache.commons.io.input.ReaderInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
@@ -91,18 +95,8 @@ public class SubtitleService {
    * (search for app signature in first 5 lines)
    */
   public static boolean isSubDictFile(File f) throws IOException {
-    InputStreamReader in = new InputStreamReader(FileManager.getUtf8Stream(f));
-    try (BufferedReader br = new BufferedReader(new BufferedReader(in))) {
-      String line;
-      int lineNum = 0;
-      while ((line = br.readLine()) != null && lineNum < 5) {
-        if (line.contains(JIJIMAKU_SIGNATURE)) {
-          return true;
-        }
-        lineNum++;
-      }
-    }
-    return false;
+    String contents = FileManager.fileAnyEncodingToString(f);
+    return contents.contains(JIJIMAKU_SIGNATURE);
   }
 
 
@@ -116,7 +110,14 @@ public class SubtitleService {
     TimedTextFileFormat ttff = FilenameUtils.getExtension(file.getName()).equals("srt")
         ? new FormatSRT()
         : new FormatASS();
-    tto = ttff.parseFile(file.getName(), FileManager.getUtf8Stream(file));
+    String fileContents = FileManager.fileAnyEncodingToString(file);
+    // Convert String to InputStream to match subtitleFile API
+    byte[] byteData = fileContents.getBytes("UTF-8");
+    // Must use BOMInputStream otherwise files with BOM will broke :(((
+    // => http://stackoverflow.com/questions/4897876/reading-utf-8-bom-marker
+    // TODO: fix problem of stream not closed
+    BOMInputStream hophop = new BOMInputStream(new ByteArrayInputStream(byteData));
+    tto = ttff.parseFile(file.getName(), hophop, StandardCharsets.UTF_8);
     tto.styling = substyles;
     tto.description = JIJIMAKU_SIGNATURE;
     if (tto.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {

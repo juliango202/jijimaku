@@ -8,6 +8,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
@@ -24,11 +27,10 @@ public class FileManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Return an utf-8 InputStream for the file.
-   * Convert encoding if necessary, using http://userguide.icu-project.org/conversion/detection
-   * NOTE: this will load the entire file in memory
+   * Read a text file detecting encoding using http://userguide.icu-project.org/conversion/detection
+   * Return the file contents as a String.
    */
-  public static InputStream getUtf8Stream(File f) throws IOException {
+  public static String fileAnyEncodingToString(File f) throws IOException {
 
     byte[] byteData = IOUtils.toByteArray(new FileInputStream(f));
 
@@ -44,17 +46,11 @@ public class FileManager {
         LOGGER.debug("{} has a detected language: {}", f.getName(), match.getLanguage());
       }
     }
-
-    byte[] unicodeByteData = unicodeData.getBytes("UTF-8");
-
-    // Must use BOMInputStream otherwise files with BOM will broke :(((
-    // => http://stackoverflow.com/questions/4897876/reading-utf-8-bom-marker
-    // TODO: fix problem of stream not closed
-    return new BOMInputStream(new ByteArrayInputStream(unicodeByteData));
+    return unicodeData;
   }
 
   public static void writeStringArrayToFile(String fileFullPath, String[] lines) throws IOException {
-    BufferedWriter bw = new BufferedWriter(new FileWriter(fileFullPath));
+    BufferedWriter bw = Files.newBufferedWriter(Paths.get(fileFullPath), StandardCharsets.UTF_8);
     for (String line : lines) {
       bw.write(line);
       bw.newLine();
