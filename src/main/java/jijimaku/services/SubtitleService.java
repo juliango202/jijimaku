@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
@@ -15,9 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FilenameUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.MessageFormatter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.UnexpectedError;
 import jijimaku.utils.FileManager;
@@ -36,7 +34,11 @@ import subtitleFile.TimedTextObject;
  * Underwood for now we use the multi-format subtitle library https://github.com/JDaren/subtitleConverter
  */
 public class SubtitleService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER;
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
   private static final String JIJIMAKU_SIGNATURE = "ANNOTATED-BY-JIJIMAKU";
 
   public enum SubStyle {
@@ -47,7 +49,7 @@ public class SubtitleService {
   private static final String DEFAULT_STYLES = "[V4+ Styles]\n"
       + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut"
       + ", ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-      + "Style: " + SubStyle.Definition + ",Arial,{},16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
+      + "Style: " + SubStyle.Definition + ",Arial,%s,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
       + "Style: " + SubStyle.Default + ",Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
 
 
@@ -67,9 +69,9 @@ public class SubtitleService {
       if (config.getSubtitleStyles() != null) {
         styles = config.getSubtitleStyles();
       } else {
-        styles = MessageFormatter.format(DEFAULT_STYLES,
+        styles = String.format(DEFAULT_STYLES,
             config.getDefinitionSize()
-        ).getMessage();
+        );
       }
       tto = ttff.parseFile("", new ByteArrayInputStream(styles.getBytes("UTF-8")));
       substyles = tto.styling;

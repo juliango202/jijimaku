@@ -1,24 +1,30 @@
 package jijimaku;
 
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
-import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker.StateValue;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import jijimaku.errors.SubsDictError;
 import jijimaku.errors.UnexpectedError;
+
+import jijimaku.utils.FileManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.swing.*;
+import javax.swing.SwingWorker.StateValue;
+import java.io.File;
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+
 
 
 /**
  * Launch Jijimaku and handle application states.
  */
 class AppMain {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER;
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
+
   private AppGui gui;
   private File searchDirectory;
 

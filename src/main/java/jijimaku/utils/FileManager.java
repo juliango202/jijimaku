@@ -7,21 +7,57 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
+import jijimaku.errors.UnexpectedError;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BOMInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
  * Utility class to manage file IO & encoding.
  */
 public class FileManager {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER;
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
+
+  /**
+   * Return the directory from which the application is run.
+   * In case of a compiled JAR this is not the current directory unfortunately
+   * See https://stackoverflow.com/questions/320542/how-to-get-the-path-of-a-running-jar-file
+   */
+  public static String getAppDirectory() {
+    // TODO: check for spaces and unicode char in path
+    Path jarDirectory;
+    try {
+      jarDirectory = Paths.get(FileManager.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent();
+    } catch (URISyntaxException exc) {
+      LOGGER.error("Cannot retrieve app directory", exc);
+      throw new UnexpectedError();
+    }
+    File[] files = jarDirectory.toFile().listFiles((dir1, name) -> name.endsWith(".jar"));
+    if (files.length == 0) {
+      // If there is no JAR(this is development mode?) just return the current directory
+      return ".";
+    }
+    return jarDirectory.toString();
+  }
+
+  /**
+   * Directory where to store log files.
+   */
+  public static String getLogsDirectory() {
+    return getAppDirectory() + "/logs";
+  }
 
   /**
    * Return an utf-8 InputStream for the file.
