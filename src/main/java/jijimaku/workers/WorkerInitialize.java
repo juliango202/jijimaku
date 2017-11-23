@@ -1,4 +1,4 @@
-package jijimaku;
+package jijimaku.workers;
 
 import java.io.File;
 import javax.swing.SwingUtilities;
@@ -19,7 +19,7 @@ import jijimaku.utils.FileManager;
 /**
  * Swing worker that initializes all services in a background thread.
  */
-public class WorkerInitialization extends SwingWorker<ServicesParam, Object> {
+public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
   private static final Logger LOGGER;
 
   static {
@@ -30,10 +30,10 @@ public class WorkerInitialization extends SwingWorker<ServicesParam, Object> {
   private final String configFilePath;
 
   /**
-   * Worker constructor.
+   * Constructor.
    * @param configFilePath path to the application config.yaml
    */
-  WorkerInitialization(String configFilePath) {
+  public WorkerInitialize(String configFilePath) {
     this.configFilePath = configFilePath;
   }
 

@@ -148,10 +148,9 @@ class AppGui extends JFrame implements ActionListener {
       dispose();
       System.exit(0);
     } else if (evt.getSource() == searchBt) {
-      fileChooser.showSaveDialog(null);
-      File file = fileChooser.getSelectedFile();
-      if (file != null) {
-        app.setSearchDirectory(file);
+      int result = fileChooser.showSaveDialog(this);
+      if (result == JFileChooser.APPROVE_OPTION) {
+        app.setSearchDirectory(fileChooser.getSelectedFile());
       }
     }
   }

@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutionException;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker.StateValue;
 
+import jijimaku.workers.WorkerInitialize;
+import jijimaku.workers.WorkerAnnotate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,6 +26,19 @@ class AppMain {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();
   }
+
+  private static final String APP_TITLE = "Jijimaku Subtitles Dictionary";
+
+  private static final String APP_DESC = "This program reads subtitle files in the chosen directory tree and add the "
+          + "dictionary definitions for the words encountered. \n\n"
+          + "The result is a subtitle file(format ASS) that can be used for language learning: subtitles appears at the bottom "
+          + "and words definitions at the top.\n\n"
+          + "See config.yaml for options.\n";
+
+  private static final String CONFIG_FILE = "config.yaml";
+
+  private static final String[] VALID_SUBFILE_EXT = {"srt","ass"};
+
 
   private AppGui gui;
   private ServicesParam services;
@@ -51,15 +66,15 @@ class AppMain {
     });
 
     // Initialize GUI
-    gui = new AppGui(AppConst.APP_TITLE, this);
-    System.out.println(AppConst.APP_DESC);
+    gui = new AppGui(APP_TITLE, this);
+    System.out.println(APP_DESC);
 
     launchInitializationWorker();
     setState(AppState.WAIT_FOR_INITIALIZATION);
   }
 
   private void launchInitializationWorker() {
-    WorkerInitialization initializer = new WorkerInitialization(AppConst.CONFIG_FILE);
+    WorkerInitialize initializer = new WorkerInitialize(CONFIG_FILE);
     initializer.addPropertyChangeListener(evt -> {
       if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
         try {
@@ -79,7 +94,7 @@ class AppMain {
   }
 
   private void launchAnnotationTask() {
-    WorkerSubAnnotator annotator = new WorkerSubAnnotator(searchDirectory, services);
+    WorkerAnnotate annotator = new WorkerAnnotate(searchDirectory, VALID_SUBFILE_EXT, services);
     annotator.addPropertyChangeListener(evt -> {
       if ("state".equals(evt.getPropertyName()) && evt.getNewValue() == StateValue.DONE) {
         try {
@@ -130,7 +145,7 @@ class AppMain {
 
       case WAIT_FOR_DIRECTORY_CHOICE:
         gui.toggleDirectorySelector(true);
-        String supportedExtensions = String.join(", *.", Arrays.asList(AppConst.VALID_SUBFILE_EXT));
+        String supportedExtensions = String.join(", *.", Arrays.asList(VALID_SUBFILE_EXT));
         System.out.format("\n➟ Click the 'Find subtitles' button to find and process subtitle files(*.%s)\n", supportedExtensions);
         break;
 

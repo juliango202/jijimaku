@@ -1,8 +1,7 @@
-package jijimaku;
+package jijimaku.services;
 
-import static jijimaku.AppConst.VALID_SUBFILE_EXT;
+import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,74 +11,45 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 
-import jijimaku.services.langparser.LangParser;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import jijimaku.errors.UnexpectedError;
 import jijimaku.models.DictionaryMatch;
 import jijimaku.models.ServicesParam;
-import jijimaku.services.Config;
-import jijimaku.services.SubtitleService;
-import jijimaku.services.SubtitleService.SubStyle;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.jijidictionary.JijiDictionaryEntry;
-import jijimaku.services.langparser.LangParser.PosTag;
-import jijimaku.services.langparser.LangParser.TextToken;
-import jijimaku.utils.FileManager;
+import jijimaku.services.langparser.LangParser;
 
 import subtitleFile.FatalParsingException;
 
 
-
-// Background task that annotates a subtitle file with words definition
-public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
-  private static final Logger LOGGER;
-
-  static {
-    System.setProperty("logDir", FileManager.getLogsDirectory());
-    LOGGER = LogManager.getLogger();
-  }
+/**
+ * Created by julian on 11/23/17.
+ */
+public class AnnotationService {
 
   private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^\\p{IsHiragana}+$");
 
   // POS tag that does not represent words
-  private static final EnumSet<PosTag> POS_TAGS_NOT_WORD = EnumSet.of(
-      PosTag.PUNCT,
-      PosTag.SYM,
-      PosTag.NUM,
-      PosTag.X
+  private static final EnumSet<LangParser.PosTag> POS_TAGS_NOT_WORD = EnumSet.of(
+          LangParser.PosTag.PUNCT,
+          LangParser.PosTag.SYM,
+          LangParser.PosTag.NUM,
+          LangParser.PosTag.X
   );
 
-  private static final EnumSet<PosTag> POS_TAGS_IGNORE_WORD = EnumSet.of(
-      PosTag.PART,
-      PosTag.DET,
-      PosTag.CCONJ,
-      PosTag.SCONJ,
-      PosTag.AUX
+  private static final EnumSet<LangParser.PosTag> POS_TAGS_IGNORE_WORD = EnumSet.of(
+          LangParser.PosTag.PART,
+          LangParser.PosTag.DET,
+          LangParser.PosTag.CCONJ,
+          LangParser.PosTag.SCONJ,
+          LangParser.PosTag.AUX
   );
 
-  private final File searchDirectory;
   private final Config config;
   private final LangParser langParser;
   private final JijiDictionary dict;
   private final SubtitleService subtitleService;
 
-  /**
-   * Swing worker to search and annotate the subtitle files.
-   * @param searchDirectory disk directory where to search subtitles(recursive)
-   */
-  WorkerSubAnnotator(File searchDirectory, ServicesParam services) {
-    if (searchDirectory == null || !searchDirectory.isDirectory()) {
-      LOGGER.error("Invalid search directory {}", String.valueOf(searchDirectory));
-      throw new UnexpectedError();
-    }
-    this.searchDirectory = searchDirectory;
+  public AnnotationService(ServicesParam services) {
     config = services.getConfig();
     langParser = services.getParser();
     dict = services.getDictionary();
@@ -88,19 +58,20 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
   /**
    * Search a list of tokens in the dictionary.
+   *
    * @return a DictionaryMatch entry if the provided tokens match a definition, null otherwise.
    */
-  private DictionaryMatch dictionaryMatch(List<TextToken> tokens) {
+  private DictionaryMatch dictionaryMatch(List<LangParser.TextToken> tokens) {
     if (tokens.isEmpty()) {
       return null;
     }
 
-    String canonicalForm = tokens.stream().map(TextToken::getCanonicalForm).collect(Collectors.joining(""));
+    String canonicalForm = tokens.stream().map(LangParser.TextToken::getCanonicalForm).collect(Collectors.joining(""));
     List<JijiDictionaryEntry> entries = dict.search(canonicalForm);
 
     // If there is no entry for the canonical form, search the exact text
     if (entries.isEmpty()) {
-      String textForm = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining(""));
+      String textForm = tokens.stream().map(LangParser.TextToken::getTextForm).collect(Collectors.joining(""));
       entries = dict.search(textForm);
     }
 
@@ -126,7 +97,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
    */
   private List<DictionaryMatch> getDictionaryMatches(String caption) {
     // A syntaxic parse of the caption returns a list of tokens.
-    List<TextToken> captionTokens = langParser.syntaxicParse(caption);
+    List<LangParser.TextToken> captionTokens = langParser.syntaxicParse(caption);
 
     // Next we must group tokens together if they is a corresponding definition in the dictionary.
     List<DictionaryMatch> matches = new ArrayList<>();
@@ -140,7 +111,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
       // Find the next DictionaryMatch
       // Start with all tokens and remove one by one until we have a match
-      List<TextToken> maximumTokens = new ArrayList<>(captionTokens);
+      List<LangParser.TextToken> maximumTokens = new ArrayList<>(captionTokens);
       DictionaryMatch match = dictionaryMatch(maximumTokens);
       while (match == null && maximumTokens.size() > 0) {
         maximumTokens = maximumTokens.subList(0, maximumTokens.size() - 1);
@@ -195,9 +166,12 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     }).collect(Collectors.toList());
   }
 
-
-  // Return true if file was annotated, false otherwise
-  private boolean annotateSubtitleFile(String directory, String fileName, String fileContents) throws IOException, FatalParsingException {
+  /**
+   * Parse a subtitle file and add annotation if dictionary definitions were found.
+   *
+   * @return true if at least one annotation was added, false otherwise.
+   */
+  public boolean annotateSubtitleFile(String directory, String fileName, String fileContents) throws IOException, FatalParsingException {
 
     Boolean displayOtherLemma = config.getDisplayOtherLemma();
 
@@ -214,7 +188,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
       // Parse subtitle and lookup definitions
       List<String> alreadyDefinedWords = new ArrayList<>();
       List<String> annotations = new ArrayList<>();
-      for (DictionaryMatch  match : getFilteredMatches(currentCaptionText)) {
+      for (DictionaryMatch match : getFilteredMatches(currentCaptionText)) {
         String color = colors.iterator().next();
         List<String> tokenDefs = new ArrayList<>();
         for (JijiDictionaryEntry def : match.getDictionaryEntries()) {
@@ -235,7 +209,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
           // Represent language level with unicode characters ①, ②, ③, ④, ...
           String langLevelStr = " ";
           if (def.getFrequency() != null) {
-            String langLevelChar = Character.toString((char)(9312 + def.getFrequency()));
+            String langLevelChar = Character.toString((char) (9312 + def.getFrequency()));
             langLevelStr = " " + SubtitleService.addStyleToText(langLevelChar, SubtitleService.TextStyle.BOLD) + " ";
           }
 
@@ -245,8 +219,6 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
             boolean inLemma = def.getPronounciation().stream().anyMatch(lemmas::contains);
             if (!inLemma) {
               pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
-            } else {
-              pronounciationStr = pronounciationStr;
             }
           }
 
@@ -265,7 +237,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
       if (annotations.size() > 0) {
         nbAnnotations += annotations.size();
         subtitleService.addJijimakuMark();
-        subtitleService.addAnnotationCaption(SubStyle.Definition, String.join("\\N", annotations));
+        subtitleService.addAnnotationCaption(SubtitleService.SubStyle.Definition, String.join("\\N", annotations));
       }
     }
 
@@ -275,47 +247,4 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     subtitleService.writeToAss(directory + "/" + FilenameUtils.getBaseName(fileName) + ".ass");
     return true;
   }
-
-  @Override
-  public Void doInBackground() throws Exception {
-    if (SwingUtilities.isEventDispatchThread()) {
-      throw new Exception("Worker should not run on the EDT thread!");
-    }
-
-    LOGGER.info("------------------- Searching in {} -------------------", searchDirectory.getAbsolutePath());
-    Integer nbAnnotated = 0;
-    for (File fileEntry : FileUtils.listFiles(searchDirectory, VALID_SUBFILE_EXT, true)) {
-      try {
-        String fileContents = FileManager.fileAnyEncodingToString(fileEntry);
-
-        if (fileEntry.isHidden() || SubtitleService.isSubDictFile(fileContents)) {
-          LOGGER.debug("{} is one of our annotated subtitle, skip it.", fileEntry.getName());
-          continue;
-        }
-        LOGGER.info("Processing " + fileEntry.getName() + "...");
-        if (annotateSubtitleFile(fileEntry.getParent(), fileEntry.getName(), fileContents)) {
-          nbAnnotated++;
-        } else {
-          LOGGER.info("Nothing to annotate was found in this file(wrong language?)");
-        }
-      } catch (Exception exc) {
-        LOGGER.error("Error while trying to annotate {}. See log for details. Skip file.", fileEntry.getName());
-        LOGGER.debug("Got exception", exc);
-      }
-
-      if (isCancelled()) {
-        LOGGER.debug("WorkerSubAnnotator was cancelled.");
-        return null;
-      }
-    }
-
-    if (nbAnnotated > 0) {
-      LOGGER.info("{} subtitle files were annotated.", nbAnnotated);
-    } else {
-      LOGGER.info("No subtitle found in this directory.");
-    }
-    return null;
-  }
-
 }
-
