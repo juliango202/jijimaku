@@ -236,17 +236,17 @@ public class SubtitleService {
     }
   }
 
+  public static String addStyleToText(String str, TextStyle style) {
+    return addStyleToText(str, style, null);
+  }
+
   // Ass color format is RGB
 
   /**
-   * Convert a html color which is RGB to ASS color which is BGR
+   * Convert a html color which is RGB to ASS color which is BGR.
    */
   private static String htmlColorToAss(String col) {
     return col.substring(5,7) + col.substring(3,5) + col.substring(1,3);
-  }
-
-  public static String addStyleToText(String str, TextStyle style) {
-    return addStyleToText(str, style, null);
   }
 
   public enum TextStyle {

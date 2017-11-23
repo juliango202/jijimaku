@@ -3,6 +3,7 @@ plugins {
   id 'com.github.johnrengelman.shadow' version '2.0.1'
   id 'java'
   id 'checkstyle'
+  id "org.sonarqube" version "2.5"
 }
 
 repositories {
@@ -19,7 +20,7 @@ dependencies {
   compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 
   // No Maven package available, import via jitpack.io
-  compile 'com.github.juliango202:subtitleConverter:-SNAPSHOT'
+  compile 'com.github.JDaren:subtitleConverter:-SNAPSHOT'
 }
 
 jar {
