@@ -31,8 +31,14 @@ class AppMain {
   private File searchDirectory = null;
   private boolean initialized = false;
 
+  public static void main(String[] args) {
+    // Create GUI in the EDT
+    SwingUtilities.invokeLater(AppMain::new);
+  }
+
   private AppMain() {
     // Global exception handler
+    // TODO: check and simplify exception flow
     Thread.setDefaultUncaughtExceptionHandler((thr, exc) -> {
       if (exc instanceof SubsDictError) {
         if (exc.getMessage() != null && !exc.getMessage().isEmpty()) {
@@ -50,11 +56,6 @@ class AppMain {
 
     launchInitializationWorker();
     setState(AppState.WAIT_FOR_INITIALIZATION);
-  }
-
-  public static void main(String[] args) {
-    // Create GUI in the EDT
-    SwingUtilities.invokeLater(AppMain::new);
   }
 
   private void launchInitializationWorker() {

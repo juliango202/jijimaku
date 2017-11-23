@@ -3,19 +3,19 @@ package jijimaku.models;
 import jijimaku.services.Config;
 import jijimaku.services.SubtitleService;
 import jijimaku.services.jijidictionary.JijiDictionary;
-import jijimaku.services.langparser.JapaneseParser;
+import jijimaku.services.langparser.LangParser;
 
 /**
- * Container for the app services. ArgumentObject.
+ * Container for the app services. (Parameter Object).
  */
 public class ServicesParam {
 
   private final Config config;
   private final JijiDictionary dictionary;
-  private final JapaneseParser parser;
+  private final LangParser parser;
   private final SubtitleService subtitleService;
 
-  public ServicesParam(Config config, JijiDictionary dictionary, JapaneseParser parser, SubtitleService subtitleService) {
+  public ServicesParam(Config config, JijiDictionary dictionary, LangParser parser, SubtitleService subtitleService) {
     this.dictionary = dictionary;
     this.parser = parser;
     this.subtitleService = subtitleService;
@@ -30,7 +30,7 @@ public class ServicesParam {
     return dictionary;
   }
 
-  public JapaneseParser getParser() {
+  public LangParser getParser() {
     return parser;
   }
 

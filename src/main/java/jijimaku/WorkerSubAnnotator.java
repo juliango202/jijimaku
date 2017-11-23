@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
+import jijimaku.services.langparser.LangParser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +29,6 @@ import jijimaku.services.SubtitleService;
 import jijimaku.services.SubtitleService.SubStyle;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.jijidictionary.JijiDictionaryEntry;
-import jijimaku.services.langparser.JapaneseParser;
 import jijimaku.services.langparser.LangParser.PosTag;
 import jijimaku.services.langparser.LangParser.TextToken;
 import jijimaku.utils.FileManager;
@@ -66,7 +66,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
   private final File searchDirectory;
   private final Config config;
-  private final JapaneseParser langParser;
+  private final LangParser langParser;
   private final JijiDictionary dict;
   private final SubtitleService subtitleService;
 
