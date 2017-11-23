@@ -4,7 +4,6 @@ import static jijimaku.AppConst.VALID_SUBFILE_EXT;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -16,10 +15,11 @@ import java.util.stream.Collectors;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
+import jijimaku.utils.FileManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.UnexpectedError;
 import jijimaku.models.DictionaryMatch;
@@ -38,7 +38,12 @@ import subtitleFile.FatalParsingException;
 
 // Background task that annotates a subtitle file with words definition
 public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER;
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
+
   private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^\\p{IsHiragana}+$");
 
   private File searchDirectory;
@@ -89,17 +94,14 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   // This is a quite heavy operation so it should be launched from background thread
   private void doInitialization() {
     LOGGER.info("-------------------------- Initialization --------------------------");
-    String jarDirectory = new File(getClass().getProtectionDomain().getCodeSource().getLocation().getPath()).getParent();
-    LOGGER.debug("JAR directory seems to be {}", jarDirectory);
+    String appDirectory = FileManager.getAppDirectory();
+    LOGGER.debug("Application directory seems to be {}", appDirectory);
 
     // Load configuration
     LOGGER.info("Loading configuration...");
-    File configFile = new File(AppConst.CONFIG_FILE);
+    File configFile = new File(appDirectory + "/" + AppConst.CONFIG_FILE);
     if (!configFile.exists()) {
-      configFile = new File(jarDirectory + "/" + AppConst.CONFIG_FILE);
-    }
-    if (!configFile.exists()) {
-      LOGGER.error("Could not find config file {} in directory {}", AppConst.CONFIG_FILE, jarDirectory);
+      LOGGER.error("Could not find config file {} in directory {}", AppConst.CONFIG_FILE, appDirectory);
       throw new UnexpectedError();
     }
 
@@ -108,12 +110,9 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
     // Initialize dictionary
     LOGGER.info("Loading dictionnary...");
-    File dictionaryFile = new File(config.getJijiDictionary());
+    File dictionaryFile = new File(appDirectory + "/" + config.getJijiDictionary());
     if (!dictionaryFile.exists()) {
-      dictionaryFile = new File(jarDirectory + "/" + config.getJijiDictionary());
-    }
-    if (!dictionaryFile.exists()) {
-      LOGGER.error("Could not find the dictionary file {} in directory {}", config.getJijiDictionary(), jarDirectory);
+      LOGGER.error("Could not find the dictionary file {} in directory {}", config.getJijiDictionary(), appDirectory);
       throw new UnexpectedError();
     }
     dict = new JijiDictionary(dictionaryFile);
@@ -238,11 +237,11 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
 
   // Return true if file was annotated, false otherwise
-  private boolean annotateSubtitleFile(File f) throws IOException, FatalParsingException {
+  private boolean annotateSubtitleFile(String directory, String fileName, String fileContents) throws IOException, FatalParsingException {
 
     Boolean displayOtherLemma = config.getDisplayOtherLemma();
 
-    subtitleService.readFile(f);
+    subtitleService.readFile(fileName, fileContents);
 
     // Loop through the subtitle file captions one by one
     int nbAnnotations = 0;
@@ -313,7 +312,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     if (nbAnnotations == 0) {
       return false;
     }
-    subtitleService.writeToAss(f.getParent() + "/" + FilenameUtils.getBaseName(f.getName()) + ".ass");
+    subtitleService.writeToAss(directory + "/" + FilenameUtils.getBaseName(fileName) + ".ass");
     return true;
   }
 
@@ -331,12 +330,14 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
     Integer nbAnnotated = 0;
     for (File fileEntry : FileUtils.listFiles(searchDirectory, VALID_SUBFILE_EXT, true)) {
       try {
-        if (fileEntry.isHidden() || SubtitleService.isSubDictFile(fileEntry)) {
+        String fileContents = FileManager.fileAnyEncodingToString(fileEntry);
+
+        if (fileEntry.isHidden() || SubtitleService.isSubDictFile(fileContents)) {
           LOGGER.debug("{} is one of our annotated subtitle, skip it.", fileEntry.getName());
           continue;
         }
         LOGGER.info("Processing " + fileEntry.getName() + "...");
-        if (annotateSubtitleFile(fileEntry)) {
+        if (annotateSubtitleFile(fileEntry.getParent(), fileEntry.getName(), fileContents)) {
           nbAnnotated++;
         } else {
           LOGGER.info("Nothing to annotate was found in this file(wrong language?)");

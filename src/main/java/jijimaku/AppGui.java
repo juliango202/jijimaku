@@ -11,7 +11,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ImageIcon;
@@ -22,10 +21,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.WindowConstants;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.UnexpectedError;
+import jijimaku.utils.FileManager;
 import jijimaku.utils.TextAreaOutputStream;
 
 
@@ -34,7 +34,11 @@ import jijimaku.utils.TextAreaOutputStream;
  */
 @SuppressWarnings("serial")
 class AppGui extends JFrame implements ActionListener {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER;
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
 
   private JButton searchBt;
   private JButton quitBt;

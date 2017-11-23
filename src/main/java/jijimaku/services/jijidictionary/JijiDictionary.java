@@ -3,15 +3,14 @@ package jijimaku.services.jijidictionary;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 import jijimaku.errors.UnexpectedError;
@@ -36,7 +35,11 @@ import jijimaku.utils.FileManager;
 // Simple XML SAX parser to load JMDict xml data into a java Hashmap
 @SuppressWarnings("checkstyle")
 public class JijiDictionary {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER;
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
   private static final String DICTIONARY_INFO_KEY = "about_this_dictionary";
   private static final String SENSE_KEY = "sense";
   private static final String SENSES_KEY = "senses";
