@@ -35,6 +35,7 @@ import jijimaku.utils.TextAreaOutputStream;
 @SuppressWarnings("serial")
 class AppGui extends JFrame implements ActionListener {
   private static final Logger LOGGER;
+
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();
@@ -132,10 +133,10 @@ class AppGui extends JFrame implements ActionListener {
   // INTERACTION WITH APPMAIN
 
   /**
-   * Enable / Disable interface buttons.
+   * Enable / Disable directory selection.
    */
-  void setReadyState(Boolean canSearch) {
-    searchBt.setEnabled(canSearch);
+  void toggleDirectorySelector(Boolean isEnabled) {
+    searchBt.setEnabled(isEnabled);
   }
 
   /**

@@ -10,7 +10,7 @@ class AppConst {
       + "dictionary definitions for the words encountered. \n\n"
       + "The result is a subtitle file(format ASS) that can be used for language learning: subtitles appears at the bottom "
       + "and words definitions at the top.\n\n"
-      + "See config.yaml for options.";
+      + "See config.yaml for options.\n";
 
   //-----------------------------------------------------
   static final String CONFIG_FILE = "config.yaml";

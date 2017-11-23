@@ -36,10 +36,12 @@ import jijimaku.utils.FileManager;
 @SuppressWarnings("checkstyle")
 public class JijiDictionary {
   private static final Logger LOGGER;
+
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();
   }
+
   private static final String DICTIONARY_INFO_KEY = "about_this_dictionary";
   private static final String SENSE_KEY = "sense";
   private static final String SENSES_KEY = "senses";

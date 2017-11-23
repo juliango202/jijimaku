@@ -24,6 +24,7 @@ import jijimaku.errors.UnexpectedError;
  */
 public class FileManager {
   private static final Logger LOGGER;
+
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();

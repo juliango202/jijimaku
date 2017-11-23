@@ -6,16 +6,16 @@ import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.langparser.JapaneseParser;
 
 /**
- * Container for all our services.
+ * Container for the app services. ArgumentObject.
  */
-public class ServiceConfig {
+public class ServicesParam {
 
   private final Config config;
   private final JijiDictionary dictionary;
   private final JapaneseParser parser;
   private final SubtitleService subtitleService;
 
-  public ServiceConfig(Config config, JijiDictionary dictionary, JapaneseParser parser, SubtitleService subtitleService) {
+  public ServicesParam(Config config, JijiDictionary dictionary, JapaneseParser parser, SubtitleService subtitleService) {
     this.dictionary = dictionary;
     this.parser = parser;
     this.subtitleService = subtitleService;

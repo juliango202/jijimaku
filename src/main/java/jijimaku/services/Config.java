@@ -24,6 +24,7 @@ import jijimaku.utils.FileManager;
  */
 public class Config {
   private static final Logger LOGGER;
+
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();

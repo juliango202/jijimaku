@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
-import jijimaku.utils.FileManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -23,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.UnexpectedError;
 import jijimaku.models.DictionaryMatch;
+import jijimaku.models.ServicesParam;
 import jijimaku.services.Config;
 import jijimaku.services.SubtitleService;
 import jijimaku.services.SubtitleService.SubStyle;
@@ -31,6 +31,7 @@ import jijimaku.services.jijidictionary.JijiDictionaryEntry;
 import jijimaku.services.langparser.JapaneseParser;
 import jijimaku.services.langparser.LangParser.PosTag;
 import jijimaku.services.langparser.LangParser.TextToken;
+import jijimaku.utils.FileManager;
 
 import subtitleFile.FatalParsingException;
 
@@ -39,6 +40,7 @@ import subtitleFile.FatalParsingException;
 // Background task that annotates a subtitle file with words definition
 public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   private static final Logger LOGGER;
+
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();
@@ -46,22 +48,12 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
 
   private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^\\p{IsHiragana}+$");
 
-  private File searchDirectory;
-  private Config config;
-
   // POS tag that does not represent words
   private static final EnumSet<PosTag> POS_TAGS_NOT_WORD = EnumSet.of(
       PosTag.PUNCT,
       PosTag.SYM,
       PosTag.NUM,
       PosTag.X
-  );
-
-  private static final EnumSet<PosTag> ADJ_NOUN_VERB_WORD = EnumSet.of(
-      PosTag.VERB,
-      PosTag.NOUN,
-      PosTag.ADJ,
-      PosTag.PROPN
   );
 
   private static final EnumSet<PosTag> POS_TAGS_IGNORE_WORD = EnumSet.of(
@@ -72,59 +64,26 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
       PosTag.AUX
   );
 
+  private final File searchDirectory;
+  private final Config config;
+  private final JapaneseParser langParser;
+  private final JijiDictionary dict;
+  private final SubtitleService subtitleService;
+
   /**
    * Swing worker to search and annotate the subtitle files.
    * @param searchDirectory disk directory where to search subtitles(recursive)
    */
-  WorkerSubAnnotator(File searchDirectory) {
+  WorkerSubAnnotator(File searchDirectory, ServicesParam services) {
     if (searchDirectory == null || !searchDirectory.isDirectory()) {
       LOGGER.error("Invalid search directory {}", String.valueOf(searchDirectory));
       throw new UnexpectedError();
     }
     this.searchDirectory = searchDirectory;
-  }
-
-  private JapaneseParser langParser = null;
-  private JijiDictionary dict = null;
-  private Set<String> ignoreWordsSet = null;  // user list of words to ignore during annotation
-  private SubtitleService subtitleService = null;
-
-
-  // Initialization => load dictionary & parser data
-  // This is a quite heavy operation so it should be launched from background thread
-  private void doInitialization() {
-    LOGGER.info("-------------------------- Initialization --------------------------");
-    String appDirectory = FileManager.getAppDirectory();
-    LOGGER.debug("Application directory seems to be {}", appDirectory);
-
-    // Load configuration
-    LOGGER.info("Loading configuration...");
-    File configFile = new File(appDirectory + "/" + AppConst.CONFIG_FILE);
-    if (!configFile.exists()) {
-      LOGGER.error("Could not find config file {} in directory {}", AppConst.CONFIG_FILE, appDirectory);
-      throw new UnexpectedError();
-    }
-
-    this.config = new Config(configFile);
-    this.ignoreWordsSet = config.getIgnoreWords();
-
-    // Initialize dictionary
-    LOGGER.info("Loading dictionnary...");
-    File dictionaryFile = new File(appDirectory + "/" + config.getJijiDictionary());
-    if (!dictionaryFile.exists()) {
-      LOGGER.error("Could not find the dictionary file {} in directory {}", config.getJijiDictionary(), appDirectory);
-      throw new UnexpectedError();
-    }
-    dict = new JijiDictionary(dictionaryFile);
-
-    // Initialize parser
-    LOGGER.info("Instantiate parser...");
-    langParser = new JapaneseParser(config);
-
-    // Read subtitles styles from config
-    subtitleService = new SubtitleService(config);
-
-    LOGGER.info("Ready to work!");
+    config = services.getConfig();
+    langParser = services.getParser();
+    dict = services.getDictionary();
+    subtitleService = services.getSubtitleService();
   }
 
   /**
@@ -222,6 +181,7 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
       }
 
       // Ignore user words list
+      Set<String> ignoreWordsSet = config.getIgnoreWords();
       if (ignoreWordsSet.contains(dm.getTextForm()) || ignoreWordsSet.contains(dm.getCanonicalForm())) {
         return false;
       }
@@ -320,10 +280,6 @@ public class WorkerSubAnnotator extends SwingWorker<Void, Object> {
   public Void doInBackground() throws Exception {
     if (SwingUtilities.isEventDispatchThread()) {
       throw new Exception("Worker should not run on the EDT thread!");
-    }
-
-    if (langParser == null) {
-      doInitialization();
     }
 
     LOGGER.info("------------------- Searching in {} -------------------", searchDirectory.getAbsolutePath());

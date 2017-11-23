@@ -35,10 +35,12 @@ import subtitleFile.TimedTextObject;
  */
 public class SubtitleService {
   private static final Logger LOGGER;
+
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();
   }
+
   private static final String JIJIMAKU_SIGNATURE = "ANNOTATED-BY-JIJIMAKU";
 
   public enum SubStyle {
