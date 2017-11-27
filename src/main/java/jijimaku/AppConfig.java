@@ -1,8 +1,7 @@
-package jijimaku.services;
+package jijimaku;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jijimaku.utils.SubtitleFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
@@ -22,13 +22,20 @@ import jijimaku.utils.FileManager;
 /**
  * Jijimaku configuration parameters(read from a YAML file).
  */
-public class Config {
+public class AppConfig {
   private static final Logger LOGGER;
 
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();
   }
+
+  private static final String DEFAULT_ASS_STYLES = "[V4+ Styles]\n"
+      + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut"
+      + ", ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+      + "Style: " + SubtitleFile.SubStyle.Definition + ",Arial,%s,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
+      + "Style: " + SubtitleFile.SubStyle.Default + ",Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
+
 
   // Yaml properties
   private final String configFilePath;
@@ -47,7 +54,7 @@ public class Config {
   /**
    * Read user preferences from a YAML config file.
    */
-  public Config(File configFile) {
+  public AppConfig(File configFile) {
     this.configFilePath = configFile.getAbsolutePath();
 
     // Parse YAML file
@@ -106,7 +113,7 @@ public class Config {
     }
   }
 
-  String getConfigFilePath() {
+  public String getConfigFilePath() {
     return configFilePath;
   }
 
@@ -145,12 +152,17 @@ public class Config {
 
   /**
    * Return the whole ASS subtitle style definition string if present.
-   * See SubtitleService.DEFAULT_STYLES for an example,
+   * See DEFAULT_ASS_STYLES for an example,
    * and https://www.matroska.org/technical/specs/subtitles/ssa.html for the specs.
    * Return null if SUBTITLE_STYLES is missing from config
    */
   public String getSubtitleStyles() {
-    return assStyles;
+    if (assStyles != null) {
+      return assStyles;
+    }
+    return String.format(DEFAULT_ASS_STYLES,
+      getDefinitionSize()
+    );
   }
 
   /**

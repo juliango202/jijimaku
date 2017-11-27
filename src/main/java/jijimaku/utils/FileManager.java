@@ -36,7 +36,6 @@ public class FileManager {
    * See https://stackoverflow.com/questions/320542/how-to-get-the-path-of-a-running-jar-file
    */
   public static String getAppDirectory() {
-    // TODO: check for spaces and unicode char in path
     Path jarDirectory;
     try {
       jarDirectory = Paths.get(FileManager.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent();

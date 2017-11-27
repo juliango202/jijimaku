@@ -9,8 +9,8 @@ import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
-import jijimaku.services.Config;
-import jijimaku.services.SubtitleService;
+import jijimaku.AppConfig;
+import jijimaku.utils.SubtitleFile;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.langparser.JapaneseParser;
 import jijimaku.utils.FileManager;
@@ -55,7 +55,7 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
       throw new UnexpectedError();
     }
 
-    Config config = new Config(configFile);
+    AppConfig config = new AppConfig(configFile);
 
     // Initialize dictionary
     LOGGER.info("Loading dictionnary...");
@@ -70,12 +70,9 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
     LOGGER.info("Instantiate parser...");
     JapaneseParser langParser = new JapaneseParser(config);
 
-    // Read subtitles styles from config
-    SubtitleService subtitleService = new SubtitleService(config);
-
     LOGGER.info("Ready to work!");
 
-    return new ServicesParam(config, dict, langParser, subtitleService);
+    return new ServicesParam(config, dict, langParser);
   }
 }
 

@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 import com.atilika.kuromoji.unidic.Token;
 import com.atilika.kuromoji.unidic.Tokenizer;
 
-import jijimaku.services.Config;
+import jijimaku.AppConfig;
 
 
 //-----------------------------------------------------------------------
@@ -40,7 +40,7 @@ public class JapaneseParser implements LangParser {
 
   private Tokenizer tokenizer;
 
-  public JapaneseParser(Config config) {
+  public JapaneseParser(AppConfig config) {
 
     try {
       // Use YAML "properNouns" option to indicate a custom dict of proper nouns with their pronunciation

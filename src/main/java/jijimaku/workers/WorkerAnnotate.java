@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
 import jijimaku.services.AnnotationService;
-import jijimaku.services.SubtitleService;
+import jijimaku.utils.SubtitleFile;
 import jijimaku.utils.FileManager;
 
 
@@ -57,11 +57,12 @@ public class WorkerAnnotate extends SwingWorker<Void, Object> {
       try {
         String fileContents = FileManager.fileAnyEncodingToString(fileEntry);
 
-        if (fileEntry.isHidden() || SubtitleService.isSubDictFile(fileContents)) {
+        if (fileEntry.isHidden() || SubtitleFile.isJijimakuFile(fileContents)) {
           LOGGER.debug("{} is one of our annotated subtitle, skip it.", fileEntry.getName());
           continue;
         }
         LOGGER.info("Processing " + fileEntry.getName() + "...");
+
         if (annotationService.annotateSubtitleFile(fileEntry.getParent(), fileEntry.getName(), fileContents)) {
           nbAnnotated++;
         } else {

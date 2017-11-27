@@ -1,5 +1,7 @@
 package jijimaku.services;
 
+import jijimaku.AppConfig;
+import jijimaku.utils.SubtitleFile;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.IOException;
@@ -44,16 +46,14 @@ public class AnnotationService {
           LangParser.PosTag.AUX
   );
 
-  private final Config config;
+  private final AppConfig config;
   private final LangParser langParser;
   private final JijiDictionary dict;
-  private final SubtitleService subtitleService;
 
   public AnnotationService(ServicesParam services) {
     config = services.getConfig();
     langParser = services.getParser();
     dict = services.getDictionary();
-    subtitleService = services.getSubtitleService();
   }
 
   /**
@@ -166,69 +166,69 @@ public class AnnotationService {
     }).collect(Collectors.toList());
   }
 
+  private List<String> annotateDictionaryMatch(DictionaryMatch match, String color) {
+    Boolean displayOtherLemma = config.getDisplayOtherLemma();
+    List<String> tokenDefs = new ArrayList<>();
+    for (JijiDictionaryEntry def : match.getDictionaryEntries()) {
+      // Each definition is made of several lemmas and several senses
+      // Depending on "displayOtherLemma" option, display only the lemma corresponding to the subtitle word, or all lemmas
+      String lemmas = def.getLemmas().stream().map(l -> {
+        if (l.equals(match.getCanonicalForm()) || l.equals(match.getTextForm())) {
+          return SubtitleFile.addStyleToText(l, SubtitleFile.TextStyle.COLOR, color);
+        } else if (displayOtherLemma) {
+          return l;
+        } else {
+          return null;
+        }
+      }).filter(Objects::nonNull).collect(Collectors.joining(", "));
+      // We don't know which sense corresponds to the subtitle so we can't do the same unfortunately ^^
+      // => just concat all senses
+      List<String> senses = def.getSenses();
+      // Represent language level with unicode characters ①, ②, ③, ④, ...
+      String langLevelStr = " ";
+      if (def.getFrequency() != null) {
+        String langLevelChar = Character.toString((char) (9312 + def.getFrequency()));
+        langLevelStr = " " + SubtitleFile.addStyleToText(langLevelChar, SubtitleFile.TextStyle.BOLD) + " ";
+      }
+
+      String pronounciationStr = "";
+      if (def.getPronounciation() != null) {
+        // Do not display pronounciation information if it is already present in lemmas
+        boolean inLemma = def.getPronounciation().stream().anyMatch(lemmas::contains);
+        if (!inLemma) {
+          pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
+        }
+      }
+
+      tokenDefs.add("★ " + lemmas + pronounciationStr + langLevelStr + String.join(" --- ", senses));
+    }
+    return tokenDefs;
+  }
+
   /**
    * Parse a subtitle file and add annotation if dictionary definitions were found.
    *
    * @return true if at least one annotation was added, false otherwise.
    */
   public boolean annotateSubtitleFile(String directory, String fileName, String fileContents) throws IOException, FatalParsingException {
-
-    Boolean displayOtherLemma = config.getDisplayOtherLemma();
-
-    subtitleService.readFile(fileName, fileContents);
+    SubtitleFile subtitle = new SubtitleFile(fileName, fileContents, config.getSubtitleStyles());
 
     // Loop through the subtitle file captions one by one
     int nbAnnotations = 0;
-    while (subtitleService.hasNextCaption()) {
-
+    while (subtitle.hasNext()) {
+      String currentCaptionText = subtitle.nextCaption();
       List<String> colors = new ArrayList<>(config.getColors().values());
-      String currentCaptionText = subtitleService.nextCaption();
-      subtitleService.setCaptionStyle();
 
       // Parse subtitle and lookup definitions
       List<String> alreadyDefinedWords = new ArrayList<>();
       List<String> annotations = new ArrayList<>();
       for (DictionaryMatch match : getFilteredMatches(currentCaptionText)) {
         String color = colors.iterator().next();
-        List<String> tokenDefs = new ArrayList<>();
-        for (JijiDictionaryEntry def : match.getDictionaryEntries()) {
-          // Each definition is made of several lemmas and several senses
-          // Depending on "displayOtherLemma" option, display only the lemma corresponding to the subtitle word, or all lemmas
-          String lemmas = def.getLemmas().stream().map(l -> {
-            if (l.equals(match.getCanonicalForm()) || l.equals(match.getTextForm())) {
-              return SubtitleService.addStyleToText(l, SubtitleService.TextStyle.COLOR, color);
-            } else if (displayOtherLemma) {
-              return l;
-            } else {
-              return null;
-            }
-          }).filter(Objects::nonNull).collect(Collectors.joining(", "));
-          // We don't know which sense corresponds to the subtitle so we can't do the same unfortunately ^^
-          // => just concat all senses
-          List<String> senses = def.getSenses();
-          // Represent language level with unicode characters ①, ②, ③, ④, ...
-          String langLevelStr = " ";
-          if (def.getFrequency() != null) {
-            String langLevelChar = Character.toString((char) (9312 + def.getFrequency()));
-            langLevelStr = " " + SubtitleService.addStyleToText(langLevelChar, SubtitleService.TextStyle.BOLD) + " ";
-          }
-
-          String pronounciationStr = "";
-          if (def.getPronounciation() != null) {
-            // Do not display pronounciation information if it is already present in lemmas
-            boolean inLemma = def.getPronounciation().stream().anyMatch(lemmas::contains);
-            if (!inLemma) {
-              pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
-            }
-          }
-
-          tokenDefs.add("★ " + lemmas + pronounciationStr + langLevelStr + String.join(" --- ", senses));
-        }
-
+        List<String> tokenDefs = annotateDictionaryMatch(match, color);
         if (!tokenDefs.isEmpty() && !alreadyDefinedWords.contains(match.getTextForm())) {
           annotations.addAll(tokenDefs);
           // Set a different color for words that are defined
-          subtitleService.colorizeCaptionWord(match.getTextForm(), color);
+          subtitle.colorizeCaptionWord(match.getTextForm(), color);
           Collections.rotate(colors, -1);
           alreadyDefinedWords.add(match.getTextForm());
         }
@@ -236,15 +236,14 @@ public class AnnotationService {
 
       if (annotations.size() > 0) {
         nbAnnotations += annotations.size();
-        subtitleService.addJijimakuMark();
-        subtitleService.addAnnotationCaption(SubtitleService.SubStyle.Definition, String.join("\\N", annotations));
+        subtitle.addAnnotationCaption(String.join("\\N", annotations));
       }
     }
 
     if (nbAnnotations == 0) {
       return false;
     }
-    subtitleService.writeToAss(directory + "/" + FilenameUtils.getBaseName(fileName) + ".ass");
+    subtitle.writeToAss(directory + "/" + FilenameUtils.getBaseName(fileName) + ".ass");
     return true;
   }
 }
