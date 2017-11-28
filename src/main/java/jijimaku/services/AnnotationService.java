@@ -210,11 +210,10 @@ public class AnnotationService {
    *
    * @return true if at least one annotation was added, false otherwise.
    */
-  public boolean annotateSubtitleFile(String directory, String fileName, String fileContents) throws IOException, FatalParsingException {
+  public String[] annotateSubtitleFile(String fileName, String fileContents) throws IOException, FatalParsingException {
     SubtitleFile subtitle = new SubtitleFile(fileName, fileContents, config.getSubtitleStyles());
 
     // Loop through the subtitle file captions one by one
-    int nbAnnotations = 0;
     while (subtitle.hasNext()) {
       String currentCaptionText = subtitle.nextCaption();
       List<String> colors = new ArrayList<>(config.getColors().values());
@@ -233,17 +232,9 @@ public class AnnotationService {
           alreadyDefinedWords.add(match.getTextForm());
         }
       }
-
-      if (annotations.size() > 0) {
-        nbAnnotations += annotations.size();
-        subtitle.addAnnotationCaption(String.join("\\N", annotations));
-      }
+      subtitle.annotate(annotations);
     }
 
-    if (nbAnnotations == 0) {
-      return false;
-    }
-    subtitle.writeToAss(directory + "/" + FilenameUtils.getBaseName(fileName) + ".ass");
-    return true;
+    return subtitle.getNbCaptionAnnotated() == 0 ? null : subtitle.toAssFormat();
   }
 }

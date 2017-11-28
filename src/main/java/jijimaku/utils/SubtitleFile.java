@@ -6,6 +6,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -54,8 +55,10 @@ public class SubtitleFile {
   private final Iterator<Map.Entry<Integer, Caption>> captionIter;
   private Map.Entry<Integer, Caption> currentCaption;
 
+  private int nbCaptionAnnotated = 0;
 
   public SubtitleFile(String fileName, String fileContents, String stylesStr) throws IOException, FatalParsingException {
+    LOGGER.debug("Parsing subtitle file {}", fileName);
 
     TimedTextFileFormat timedTextFormat;
     switch (FilenameUtils.getExtension(fileName)) {
@@ -79,7 +82,8 @@ public class SubtitleFile {
     }
 
     if (timedText.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {
-      LOGGER.warn("\n" + timedText.warnings);
+      LOGGER.warn("There was some warnings during parsing. See logs.");
+      LOGGER.debug("Got warnings: {}", "\n" + timedText.warnings);
     }
 
     styles = parseStyles(stylesStr);
@@ -170,24 +174,32 @@ public class SubtitleFile {
     }
   }
 
-  public void addAnnotationCaption(String annotationStr) {
+  public void annotate(List<String> annotations) {
+    if (annotations.isEmpty()) {
+      return;
+    }
     // When adding a new caption to the subtitle we must find a key(int time) not yet used
     Integer time = currentCaption.getKey() + 1;
     while (timedText.captions.containsKey(time) || annotationCaptions.containsKey(time)) {
       time++;
     }
     Caption annotation = new Caption();
-    annotation.content = annotationStr;
+    annotation.content = String.join("\\N", annotations);
     annotation.start = currentCaption.getValue().start;
     annotation.end = currentCaption.getValue().end;
     annotation.style = styles.get(SubStyle.Definition.toString());
     annotationCaptions.put(time, annotation);
+    nbCaptionAnnotated++;
   }
 
-  public void writeToAss(String outFile) throws IOException {
-    // Before writing we add all the annotations to the file captions
+  public String[] toAssFormat() {
+    // Before exporting we add all the annotations to the file captions
     timedText.captions.putAll(annotationCaptions);
-    FileManager.writeStringArrayToFile(outFile, timedText.toASS());
+    return timedText.toASS();
+  }
+
+  public int getNbCaptionAnnotated() {
+    return nbCaptionAnnotated;
   }
 
   /**

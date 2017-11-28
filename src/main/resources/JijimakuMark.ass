@@ -13,4 +13,4 @@ Style: Default,Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,00:00:00.01,00:00:03.25,Definition,,0000,0000,0000,,★ TO REPLACE
+Dialogue: 0,00:00:00.01,00:00:04.00,Definition,,0000,0000,0000,,★ TO REPLACE

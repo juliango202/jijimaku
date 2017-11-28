@@ -3,8 +3,12 @@ package jijimaku.workers;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,6 +17,7 @@ import jijimaku.models.ServicesParam;
 import jijimaku.services.AnnotationService;
 import jijimaku.utils.SubtitleFile;
 import jijimaku.utils.FileManager;
+import subtitleFile.FatalParsingException;
 
 
 /**
@@ -20,6 +25,8 @@ import jijimaku.utils.FileManager;
  */
 public class WorkerAnnotate extends SwingWorker<Void, Object> {
   private static final Logger LOGGER;
+
+  private static final String ASS_FILE_BACKUP_SUFFIX = "._original";
 
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
@@ -44,6 +51,40 @@ public class WorkerAnnotate extends SwingWorker<Void, Object> {
     this.annotationService = new AnnotationService(services);
   }
 
+  /**
+   * Process one file.
+   * @return if the file was annotated, false otherwise.
+   */
+  private boolean processFile(File fileEntry) throws IOException, FatalParsingException {
+    String fileContents = FileManager.fileAnyEncodingToString(fileEntry);
+    if (fileEntry.isHidden() || SubtitleFile.isJijimakuFile(fileContents)) {
+      LOGGER.debug("{} is one of our annotated subtitle, skip it.", fileEntry.getName());
+      return false;
+    }
+    String fileName = fileEntry.getName();
+    String fileBaseName = FilenameUtils.getBaseName(fileName);
+
+    LOGGER.info("Processing " + fileName + "...");
+    String[] annotated = annotationService.annotateSubtitleFile(fileName, fileContents);
+    if (annotated == null) {
+      LOGGER.info("Nothing to annotate was found in this file(wrong language?)");
+      return false;
+    }
+
+    // For ASS files, make a copy because the original file will be overwritten
+    if (FilenameUtils.getExtension(fileName).equals("ass")) {
+      if (fileBaseName.endsWith(ASS_FILE_BACKUP_SUFFIX)) {
+        // This is already our copy, just remove suffix when writing out the result
+        fileBaseName = fileBaseName.substring(0, fileBaseName.lastIndexOf(ASS_FILE_BACKUP_SUFFIX));
+      } else {
+        Files.copy(Paths.get(fileEntry.toURI()), Paths.get(fileEntry.getParent() + "/" + fileBaseName + ASS_FILE_BACKUP_SUFFIX + ".ass"));
+      }
+    }
+
+    String outFile = fileEntry.getParent() + "/" + fileBaseName + ".ass";
+    FileManager.writeStringArrayToFile(outFile, annotated);
+    return true;
+  }
 
   @Override
   public Void doInBackground() throws Exception {
@@ -55,18 +96,8 @@ public class WorkerAnnotate extends SwingWorker<Void, Object> {
     Integer nbAnnotated = 0;
     for (File fileEntry : FileUtils.listFiles(searchDirectory, searchExtensions, true)) {
       try {
-        String fileContents = FileManager.fileAnyEncodingToString(fileEntry);
-
-        if (fileEntry.isHidden() || SubtitleFile.isJijimakuFile(fileContents)) {
-          LOGGER.debug("{} is one of our annotated subtitle, skip it.", fileEntry.getName());
-          continue;
-        }
-        LOGGER.info("Processing " + fileEntry.getName() + "...");
-
-        if (annotationService.annotateSubtitleFile(fileEntry.getParent(), fileEntry.getName(), fileContents)) {
+        if (processFile(fileEntry)) {
           nbAnnotated++;
-        } else {
-          LOGGER.info("Nothing to annotate was found in this file(wrong language?)");
         }
       } catch (Exception exc) {
         LOGGER.error("Error while trying to annotate {}. See log for details. Skip file.", fileEntry.getName());
