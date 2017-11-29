@@ -19,6 +19,7 @@ import jijimaku.models.ServicesParam;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.jijidictionary.JijiDictionaryEntry;
 import jijimaku.services.langparser.LangParser;
+import jijimaku.services.langparser.LangParser.TextToken;
 
 import subtitleFile.FatalParsingException;
 
@@ -61,17 +62,17 @@ public class AnnotationService {
    *
    * @return a DictionaryMatch entry if the provided tokens match a definition, null otherwise.
    */
-  private DictionaryMatch dictionaryMatch(List<LangParser.TextToken> tokens) {
+  private DictionaryMatch dictionaryMatch(List<TextToken> tokens) {
     if (tokens.isEmpty()) {
       return null;
     }
 
-    String canonicalForm = tokens.stream().map(LangParser.TextToken::getCanonicalForm).collect(Collectors.joining(""));
+    String canonicalForm = tokens.stream().map(TextToken::getCanonicalForm).collect(Collectors.joining(""));
     List<JijiDictionaryEntry> entries = dict.search(canonicalForm);
 
     // If there is no entry for the canonical form, search the exact text
     if (entries.isEmpty()) {
-      String textForm = tokens.stream().map(LangParser.TextToken::getTextForm).collect(Collectors.joining(""));
+      String textForm = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining(""));
       entries = dict.search(textForm);
     }
 
@@ -97,21 +98,22 @@ public class AnnotationService {
    */
   private List<DictionaryMatch> getDictionaryMatches(String caption) {
     // A syntaxic parse of the caption returns a list of tokens.
-    List<LangParser.TextToken> captionTokens = langParser.syntaxicParse(caption);
+    List<TextToken> captionTokens = langParser.syntaxicParse(caption);
 
     // Next we must group tokens together if they is a corresponding definition in the dictionary.
     List<DictionaryMatch> matches = new ArrayList<>();
     while (!captionTokens.isEmpty()) {
 
-      // Skip token that are not words
-      if (POS_TAGS_NOT_WORD.contains(captionTokens.get(0).getPartOfSpeech())) {
+      // Skip token that are not words or should be ignored
+      if (POS_TAGS_NOT_WORD.contains(captionTokens.get(0).getPartOfSpeech())
+          || POS_TAGS_IGNORE_WORD.contains(captionTokens.get(0).getPartOfSpeech())) {
         captionTokens = captionTokens.subList(1, captionTokens.size());
         continue;
       }
 
       // Find the next DictionaryMatch
       // Start with all tokens and remove one by one until we have a match
-      List<LangParser.TextToken> maximumTokens = new ArrayList<>(captionTokens);
+      List<TextToken> maximumTokens = new ArrayList<>(captionTokens);
       DictionaryMatch match = dictionaryMatch(maximumTokens);
       while (match == null && maximumTokens.size() > 0) {
         maximumTokens = maximumTokens.subList(0, maximumTokens.size() - 1);
@@ -197,6 +199,10 @@ public class AnnotationService {
         boolean inLemma = def.getPronounciation().stream().anyMatch(lemmas::contains);
         if (!inLemma) {
           pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
+          // If text word is not in lemma, the match must come from pronounciation => colorize
+          if (!lemmas.contains(match.getCanonicalForm()) && !lemmas.contains(match.getTextForm())) {
+            pronounciationStr = SubtitleFile.addStyleToText(pronounciationStr, SubtitleFile.TextStyle.COLOR, color);
+          }
         }
       }
 
