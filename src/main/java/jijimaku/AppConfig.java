@@ -33,7 +33,7 @@ public class AppConfig {
   private static final String DEFAULT_ASS_STYLES = "[V4+ Styles]\n"
       + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut"
       + ", ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-      + "Style: " + SubtitleFile.SubStyle.Definition + ",Arial,%s,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
+      + "Style: " + SubtitleFile.SubStyle.Definition + ",Arial,%d,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
       + "Style: " + SubtitleFile.SubStyle.Default + ",Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
 
 
@@ -42,14 +42,16 @@ public class AppConfig {
   private final Map<String, Object> configMap;
 
   // Jijimaku config values
-  private final Map<String,String> colors;
-  private final Set<String> ignoreWords;
+  private final String dictionary;
+  private final Integer definitionSize;
+  private final List<String> highlightColors;
   private final Boolean displayOtherLemma;
-  private final Map<String, String> properNouns;
-  private final String jijiDictionary;
-  private final String assStyles;
-  private final Map<String, String> definitionStyle;
   private final List<Integer> ignoreFrequencies;
+  private final List<String> ignoreWords;
+
+  private final String assStyles;
+  private final Map<String, String> properNouns;
+
 
   /**
    * Read user preferences from a YAML config file.
@@ -68,29 +70,16 @@ public class AppConfig {
       throw new UnexpectedError();
     }
 
-    // Load config values
-    final Map<String, String> hashMapStringString = new HashMap<>();
-
-    // TODO: check type of hashmap keys(not done on cast)
-
-    colors = getConfigValue("colors", hashMapStringString.getClass());
-    properNouns = getConfigValue("properNouns", hashMapStringString.getClass());
-    definitionStyle = getConfigValue("definitionStyle", hashMapStringString.getClass());
-    ignoreFrequencies = getConfigValue("ignoreFrequencies", (new ArrayList<Integer>()).getClass());
-
+    // TODO: check type of array values(not done on cast)
+    dictionary = getConfigValue("dictionary", String.class);
+    definitionSize = getConfigValue("definitionSize", Integer.class);
+    highlightColors = getConfigValue("highlightColors", (new ArrayList<String>()).getClass());
     displayOtherLemma = getConfigValue("displayOtherLemma", Boolean.class);
-    jijiDictionary = getConfigValue("jijiDictionary", String.class);
-    assStyles = getConfigValue("assStyles", String.class);
+    ignoreFrequencies = getConfigValue("ignoreFrequencies", (new ArrayList<Integer>()).getClass());
+    ignoreWords = getConfigValue("ignoreWords", (new ArrayList<String>()).getClass());
 
-    // Load ignore words, convert config String to a Set
-    final String ignoreWordsText = getConfigValue("ignoreWords", String.class);
-    if (ignoreWordsText == null) {
-      ignoreWords = null;
-    } else {
-      List<String> wordList = Arrays.asList(ignoreWordsText.split("\\r?\\n"));
-      wordList.removeIf(word -> word.trim().isEmpty());
-      ignoreWords = new HashSet<>(wordList);
-    }
+    properNouns = new HashMap<>();  // Ignore fo now
+    assStyles = getConfigValue("assStyles", String.class);
   }
 
   /**
@@ -113,41 +102,57 @@ public class AppConfig {
     }
   }
 
-  public String getConfigFilePath() {
-    return configFilePath;
-  }
-
-
   /**
-   * Color configuration for defined words.
+   * Name of the dictionary file used to source words definitions.
+   * The dictionary file must follow the JIJI format => https://github.com/juliango202/jiji
    */
-  public Map<String,String> getColors() {
-    return colors;
+  public String getDictionary() {
+    return dictionary;
   }
 
+
   /**
-   * Set of subtitles words that should be ignored(not annotated).
+   * Font-size to use when writing dictionary definitions.
    */
-  public Set<String> getIgnoreWords() {
-    return ignoreWords;
+  public Integer getDefinitionSize() {
+    return definitionSize != null ? definitionSize : 8;
   }
 
   /**
-   * Flag to display all lemmas of words or not.
+   * List of colors to use successively to highlight the defined words in a subtitle caption.
+   */
+  public List<String> getHighlightColors() {
+    if (highlightColors != null && highlightColors.contains(null)) {
+      throw new AssertionError("highlightColors list should not contain null");
+    }
+    return highlightColors != null ? highlightColors : new ArrayList<>(Arrays.asList("#FFFFFF"));
+  }
+
+  /**
+   * Flag to display all lemmas of a defined word or not.
    */
   public Boolean getDisplayOtherLemma() {
     return displayOtherLemma;
   }
 
-  public Map<String,String> getProperNouns() {
-    return properNouns;
+  /**
+   * Ignore words if their frequency is one of the list.
+   */
+  public List<Integer> getIgnoreFrequencies() {
+    if (ignoreFrequencies != null && ignoreFrequencies.contains(null)) {
+      throw new AssertionError("ignoreFrequencies list should not contain null");
+    }
+    return ignoreFrequencies != null ? ignoreFrequencies : new ArrayList<>();
   }
 
   /**
-   * Return the JijiDictionary file(*.jiji.zip, *.jiji.yaml) used for looking up definitions.
+   * Set of subtitles words that should be ignored(not annotated).
    */
-  public String getJijiDictionary() {
-    return jijiDictionary;
+  public List<String> getIgnoreWords() {
+    if (ignoreWords != null && ignoreWords.contains(null)) {
+      throw new AssertionError("ignoreWords list should not contain null");
+    }
+    return ignoreWords != null ? ignoreWords : new ArrayList<>();
   }
 
   /**
@@ -165,28 +170,8 @@ public class AppConfig {
     );
   }
 
-  /**
-   * Color of text when writing definitions.
-   */
-  public String getDefinitionColor() {
-    return definitionStyle.get("color");
-  }
-
-  /**
-   * Size of text when writing definitions.
-   */
-  public String getDefinitionSize() {
-    return definitionStyle.get("size") != null ? definitionStyle.get("size") : "8";
-  }
-
-  /**
-   * Ignore words if their frequency is one of the list.
-   */
-  public List<Integer> getIgnoreFrequencies() {
-    if (ignoreFrequencies != null && ignoreFrequencies.contains(null)) {
-      throw new AssertionError("ignoreFrequencies list should not contain null");
-    }
-    return ignoreFrequencies != null ? ignoreFrequencies : new ArrayList<>();
+  public Map<String,String> getProperNouns() {
+    return properNouns;
   }
 }
 

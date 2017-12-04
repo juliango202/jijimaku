@@ -2,7 +2,6 @@ package jijimaku.services;
 
 import jijimaku.AppConfig;
 import jijimaku.utils.SubtitleFile;
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,11 +49,13 @@ public class AnnotationService {
   private final AppConfig config;
   private final LangParser langParser;
   private final JijiDictionary dict;
+  private final List<String> ignoreWordsList;
 
   public AnnotationService(ServicesParam services) {
     config = services.getConfig();
     langParser = services.getParser();
     dict = services.getDictionary();
+    ignoreWordsList = config.getIgnoreWords();
   }
 
   /**
@@ -154,8 +155,7 @@ public class AnnotationService {
       }
 
       // Ignore user words list
-      Set<String> ignoreWordsSet = config.getIgnoreWords();
-      if (ignoreWordsSet.contains(dm.getTextForm()) || ignoreWordsSet.contains(dm.getCanonicalForm())) {
+      if (ignoreWordsList.contains(dm.getTextForm()) || ignoreWordsList.contains(dm.getCanonicalForm())) {
         return false;
       }
 
@@ -222,7 +222,7 @@ public class AnnotationService {
     // Loop through the subtitle file captions one by one
     while (subtitle.hasNext()) {
       String currentCaptionText = subtitle.nextCaption();
-      List<String> colors = new ArrayList<>(config.getColors().values());
+      List<String> colors = new ArrayList<>(config.getHighlightColors());
 
       // Parse subtitle and lookup definitions
       List<String> alreadyDefinedWords = new ArrayList<>();

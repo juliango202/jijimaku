@@ -10,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
 import jijimaku.AppConfig;
-import jijimaku.utils.SubtitleFile;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.langparser.JapaneseParser;
 import jijimaku.utils.FileManager;
@@ -59,9 +58,9 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
 
     // Initialize dictionary
     LOGGER.info("Loading dictionnary...");
-    File dictionaryFile = new File(appDirectory + "/" + config.getJijiDictionary());
+    File dictionaryFile = new File(appDirectory + "/" + config.getDictionary());
     if (!dictionaryFile.exists()) {
-      LOGGER.error("Could not find the dictionary file {} in directory {}", config.getJijiDictionary(), appDirectory);
+      LOGGER.error("Could not find the dictionary file {} in directory {}", config.getDictionary(), appDirectory);
       throw new UnexpectedError();
     }
     JijiDictionary dict = new JijiDictionary(dictionaryFile);
