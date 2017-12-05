@@ -28,7 +28,8 @@ import subtitleFile.FatalParsingException;
  */
 public class AnnotationService {
 
-  private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^\\p{IsHiragana}+$");
+  private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^\\p{InHiragana}+$");
+  private static final Pattern IS_KATAKANA_RE = Pattern.compile("^\\p{InKatakana}+$");
 
   // POS tag that does not represent words
   private static final EnumSet<LangParser.PosTag> POS_TAGS_NOT_WORD = EnumSet.of(
@@ -130,7 +131,8 @@ public class AnnotationService {
       // Do not accept the match if it is a short sequence of hiragana
       // because it is most likely a wrong grouping of independent grammar conjunctions
       // and unlikely to be an unusual word that needs to be defined
-      if (match.getTextForm().length() <= 3 && IS_HIRAGANA_RE.matcher(match.getTextForm()).matches()) {
+      // (but make an exception for verbs)
+      if (match.getTextForm().length() <= 3 && IS_HIRAGANA_RE.matcher(match.getTextForm()).matches() && !match.hasVerb()) {
         captionTokens = captionTokens.subList(1, captionTokens.size());
         continue;
       }
@@ -156,6 +158,12 @@ public class AnnotationService {
 
       // Ignore user words list
       if (ignoreWordsList.contains(dm.getTextForm()) || ignoreWordsList.contains(dm.getCanonicalForm())) {
+        return false;
+      }
+
+      // For now ignore all-kana matches except if there is a verb
+      if((IS_HIRAGANA_RE.matcher(dm.getTextForm()).matches() || IS_KATAKANA_RE.matcher(dm.getTextForm()).matches())
+          && !dm.hasVerb()) {
         return false;
       }
 
@@ -189,7 +197,7 @@ public class AnnotationService {
       // Represent language level with unicode characters ①, ②, ③, ④, ...
       String langLevelStr = " ";
       if (def.getFrequency() != null) {
-        String langLevelChar = Character.toString((char) (9312 + def.getFrequency()));
+        String langLevelChar = Character.toString((char) ("①".charAt(0) + (def.getFrequency() - 1)));
         langLevelStr = " " + SubtitleFile.addStyleToText(langLevelChar, SubtitleFile.TextStyle.BOLD) + " ";
       }
 

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import jijimaku.services.jijidictionary.JijiDictionaryEntry;
+import jijimaku.services.langparser.LangParser;
 import jijimaku.services.langparser.LangParser.TextToken;
 
 /**
@@ -33,5 +34,14 @@ public class DictionaryMatch {
 
   public List<TextToken> getTokens() {
     return tokens;
+  }
+
+  public boolean hasVerb() {
+    return tokens.stream().anyMatch(t -> t.getPartOfSpeech().equals(LangParser.PosTag.VERB));
+  }
+
+  public boolean hasNoun() {
+    return tokens.stream().anyMatch(t -> t.getPartOfSpeech().equals(LangParser.PosTag.NOUN)
+        || t.getPartOfSpeech().equals(LangParser.PosTag.NOUN));
   }
 }

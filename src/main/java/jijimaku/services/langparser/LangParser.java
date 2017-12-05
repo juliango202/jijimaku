@@ -8,7 +8,6 @@ import java.util.List;
 public interface LangParser {
 
   // Part Of Speech universal tags
-  // TODO: use universal Dependencies tags: http://universaldependencies.org/ja/overview/morphology.html
   // See http://universaldependencies.org/u/pos/all.html
   enum PosTag {
     ADJ,    // adjective
@@ -30,6 +29,7 @@ public interface LangParser {
     X,      // other
     UNKNOWN
   }
+
 
   class TextToken {
 
