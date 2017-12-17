@@ -1,5 +1,3 @@
-# JIJIMAKU
-
 Jijimaku is a Java application for inserting dictionnary definition inside video subtitle files. It can be used to improve one's language skill when watching videos in a foreign language.
 
 **Currently in beta, only Japanese subtitles are supported.**
@@ -24,7 +22,7 @@ sometimes with a specific O.S., it's difficult to watch the video with other peo
 
 Jijimaku takes another approach, the video itself **is** the interface, word definitions are overlayed via the subtitles, and interaction is deliberately minimalist: press pause if you need to get more time to read the definition, then press resume, and that's it. 
 
-This has the big advantage to make jijimaku as universal as video playing: use it with any O.S., on smartphone, on TV, etc... It also minimizes distractions so that users can really focus on the video.
+This has the big advantage to make Jijimaku as universal as video playing: use it with any O.S., on smartphone, on TV, etc... It also minimizes distractions so that users can really focus on the video.
 
 ## Ignore words that you already know
 In the same spirit of minimizing distraction, it is best to make Jijimaku ignores the words that you already know or don't need defined.
