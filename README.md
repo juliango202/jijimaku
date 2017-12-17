@@ -24,7 +24,13 @@ sometimes with a specific O.S., it's difficult to watch the video with other peo
 
 Jijimaku takes another approach, the video itself **is** the interface, word definitions are overlayed via the subtitles, and interaction is deliberately minimalist: press pause if you need to get more time to read the definition, then press resume, and that's it. 
 
-This has the big advantage to make jijimaku as universal as video playing, use it with any O.S., on smartphone, on TV, etc... It minimizes distractions so that users can really focus on the video.
+This has the big advantage to make jijimaku as universal as video playing: use it with any O.S., on smartphone, on TV, etc... It also minimizes distractions so that users can really focus on the video.
+
+## Ignore words that you already know
+In the same spirit of minimizing distraction, it is best to make Jijimaku ignores the words that you already know or don't need defined.
+Currently two options are offered for this:
+- "ignoreFrequencies" when the frequency information is available this let you ignore words that are frequent enough so that you expect to know them already
+- "ignoreWords" is a list of words that can be safely ignored because you already know them (could be an export from anki/SRS application)
 
 ## TODO:
 - lemmatizer library for other languages support: https://bitbucket.org/hlavki/jlemmagen/
