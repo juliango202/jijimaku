@@ -2,12 +2,11 @@
 
 Jijimaku is a Java application for inserting dictionnary definition inside video subtitle files. It can be used to improve one's language skill when watching videos in a foreign language.
 
-TODO:
-- language detection (if needed?) => https://github.com/shuyo/language-detection/blob/wiki/ProjectHome.md
+**Currently in beta, only Japanese subtitles are supported.**
 
-For multilanguage, 2 options:
-1. custom dict format with all words forms for each entry(inverse lemmatizer)
-2. use lemmatizer library:
-* https://bitbucket.org/hlavki/jlemmagen/
+![BSpline 1](https://juliango202.github.io/img/jijimaku/snap1.jpg)
+
+TODO:
+- lemmatizer library for other languages support: https://bitbucket.org/hlavki/jlemmagen/
 
 word list in google syntaxnet models could help
