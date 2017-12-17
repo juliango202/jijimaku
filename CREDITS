@@ -1,0 +1,5 @@
+Jijimaku is open-source software.
+
+It uses the following open-source libraries:
+- SubtitleConverter by J. David REQUEJO https://github.com/JDaren/subtitleConverter, MIT licence
+- Kuromoji Japanese language parser by Atilika https://github.com/atilika/kuromoji, Apache 2.0 licence 
