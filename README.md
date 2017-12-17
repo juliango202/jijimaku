@@ -12,7 +12,7 @@ Past a certain level, there is no better way to learn a language than going full
 reading the books and watching the video aimed at native speakers.
 
 The only thing you need is a tool to pickup new words as you go. When speaking to native people you can just ask them to explain the word,
-and when reading some material a pop-up dictionary works great(that would be rikaichan for Japanese).
+and when reading some material a pop-up dictionary works great(for example rikaichan add-on for Japanese).
 
 But for video the choice is more limited. 
 There are some all-in-one video players or websites where in addition to the video frame there is
