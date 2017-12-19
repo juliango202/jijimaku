@@ -1,5 +1,6 @@
 Jijimaku is open-source software, written by Julian Go(for my personal Japanese studies ^_^)
 
-It uses the following open-source libraries:
+It uses the following open-source libraries/tools:
 - SubtitleConverter by J. David REQUEJO https://github.com/JDaren/subtitleConverter, MIT licence
 - Kuromoji Japanese language parser by Atilika https://github.com/atilika/kuromoji, Apache 2.0 licence 
+- Jim's Breen Japanese dictionary http://www.edrdg.org/edrdg/licence.html Creative Commons Attribution-ShareAlike Licence
