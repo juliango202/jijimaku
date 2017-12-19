@@ -28,11 +28,12 @@ This has the big advantage to make Jijimaku as universal as video playing: use i
 In the same spirit of minimizing distraction, it is best to make Jijimaku ignores the words that you already know or don't need defined.
 Currently two options are offered for this:
 - "ignoreFrequencies" when the frequency information is available, this let you ignore words that are frequent enough so that you expect to know them already
-- "ignoreWords" is a list of words that can be safely ignored because you already know them (could be an export from anki/SRS application)
+- "ignoreWords" is a list of words that can be safely ignored because you already know them (could be an export from anki/SRS application). In the future a great addition would be a video player plugin that lets you add to this list the defined words you already know by just pressing some key(see TODO).
 
 Once installed, see config.yaml for more information on these options.
 
 ## TODO:
+- video player plugin(VLC lua script?) that let you select among the defined words those you already know(by pressing a key) and add them automatically to the ignoreWords list. This would allow jijimaku to match precisely a user true level after a few weeks of usage.
 - lemmatizer library for other languages support: https://bitbucket.org/hlavki/jlemmagen/
 
 word list in google syntaxnet models could help
