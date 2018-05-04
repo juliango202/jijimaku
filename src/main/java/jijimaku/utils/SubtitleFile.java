@@ -91,8 +91,7 @@ public class SubtitleFile {
     timedText.description = JIJIMAKU_SIGNATURE;
     annotationCaptions = new TreeMap<>();
 
-    // Initialization: add jijimaku mark and set style to Default
-    addJijimakuMark();
+    // Initialization: set style to Default
     timedText.captions.values().stream().forEach(c -> c.style = styles.get("Default"));
 
     captionIter = timedText.captions.entrySet().iterator();
@@ -153,7 +152,7 @@ public class SubtitleFile {
   /**
    * Add a short "by Jijimaku" message in the subtitle caption at the start of the video.
    */
-  private void addJijimakuMark() {
+  public void addJijimakuMark(String dictionaryTitle) {
     Integer firstCaptionTimeMs = timedText.captions.entrySet().iterator().next().getKey();
     if (firstCaptionTimeMs == 0) {
       // Rare case, give up
@@ -165,7 +164,7 @@ public class SubtitleFile {
     try {
       TimedTextObject tto = ttff.parseFile("", getClass().getClassLoader().getResourceAsStream("JijimakuMark.ass"));
       Caption jijimakuMark = tto.captions.values().iterator().next();
-      jijimakuMark.content = "★ Definitions by {\\c&AAAAFF&}{\\b1}JIJIMAKU{\\r} using {\\c&FFAAAA&}Jim's Breen Japanese dictionary{\\r}";
+      jijimakuMark.content = "★ Definitions by {\\c&AAAAFF&}{\\b1}JIJIMAKU{\\r} using {\\c&FFAAAA&}" + dictionaryTitle + "{\\r}";
       annotationCaptions.put(0, jijimakuMark);
     } catch (IOException exc) {
       LOGGER.error("Cannot read JijimakuMark.ass.", exc);

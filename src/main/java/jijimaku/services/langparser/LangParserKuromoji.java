@@ -13,13 +13,21 @@ import com.atilika.kuromoji.unidic.Token;
 import com.atilika.kuromoji.unidic.Tokenizer;
 
 import jijimaku.AppConfig;
+import jijimaku.utils.FileManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 //-----------------------------------------------------------------------
 // Parse a Japanese sentence into words via the KUROMOJI(unidoct) library
 //-----------------------------------------------------------------------
 
-public class JapaneseParser implements LangParser {
+public class LangParserKuromoji implements LangParser {
+  private static final Logger LOGGER;
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
   private static final String MISSING_FORM = "*";
 
   private static final List<String> PUNCTUATION_TOKENS = Arrays.asList(
@@ -30,17 +38,13 @@ public class JapaneseParser implements LangParser {
       "その", "どの", "この"
   );
 
-  private static final List<String> PART_OF_VERB_CONJUNCTIONS = Arrays.asList(
-      "て", "で", "ちゃ"
-  );
-
   private static final List<String> NOUN_CONJUNCTIONS = Arrays.asList(
       "と", "か"
   );
 
   private Tokenizer tokenizer;
 
-  public JapaneseParser(AppConfig config) {
+  public LangParserKuromoji(AppConfig config) {
 
     try {
       // Use YAML "properNouns" option to indicate a custom dict of proper nouns with their pronunciation
@@ -141,7 +145,8 @@ public class JapaneseParser implements LangParser {
   /**
    * Use the kuromoji library to parse a text, and map the results to our custom TextToken class.
    */
-  private List<TextToken> kuromojiParse(String text) {
+  @Override
+  public List<TextToken> syntaxicParse(String text) {
     // We use kuromoji-unidoct as parsing dictionary (larger)
     // to use the default ipadic, replace the kuromoji JAR and use the following code instead:
     // Tokenizer tokenizer = Tokenizer.builder().mode(Mode.SEARCH).build(); then => token.getBaseForm()
@@ -152,36 +157,15 @@ public class JapaneseParser implements LangParser {
       String writtenForm = !token.getWrittenForm().equals(MISSING_FORM)
               ? token.getWrittenForm()
               : token.getSurface();
-      String writtenBaseForm = !token.getWrittenBaseForm().equals(MISSING_FORM)
-              ? token.getWrittenBaseForm()
+      String firstCanonicalForm = !token.getWrittenBaseForm().equals(MISSING_FORM)
+          ? token.getWrittenBaseForm()
+          : null;
+      String secondCanonicalForm = !token.getLemma().equals(MISSING_FORM)
+              ? token.getLemma()
               : null;
-      PosTag pos = getTokenPosTag(previousToken, token, writtenForm);
-      return new TextToken(pos, writtenForm, writtenBaseForm);
+       PosTag pos = getTokenPosTag(previousToken, token, writtenForm);
+      return new TextToken(pos, writtenForm, firstCanonicalForm, secondCanonicalForm);
     }).collect(Collectors.toList());
-  }
-
-  @Override
-  public List<TextToken> syntaxicParse(String text) {
-    // First pass with kuromoji library
-    List<TextToken> tokens = kuromojiParse(text);
-
-    // In a second pass we want to merge some SCONJ with the previous VERBS/AUX
-    // This is so that for example 継ぎ-まし-て appears as one word in the subtitles
-    List<TextToken> filteredTokens = new ArrayList<>();
-    for (int i = 0; i < tokens.size(); i++) {
-      TextToken token = tokens.get(i);
-      TextToken lastOk = filteredTokens.isEmpty() ? null : filteredTokens.get(filteredTokens.size() - 1);
-      boolean isPartOfVerbConj = (token.getPartOfSpeech() == PosTag.SCONJ && PART_OF_VERB_CONJUNCTIONS.contains(token.getTextForm()));
-      if (lastOk != null
-          && (lastOk.getPartOfSpeech() == PosTag.AUX || lastOk.getPartOfSpeech() == PosTag.VERB)
-          && isPartOfVerbConj) {
-        TextToken completeVerb = new TextToken(lastOk.getPartOfSpeech(), lastOk.getTextForm() + token.getTextForm(), lastOk.getCanonicalForm());
-        filteredTokens.set(filteredTokens.size() - 1, completeVerb);
-        continue;
-      }
-      filteredTokens.add(token);
-    }
-    return filteredTokens;
   }
 }
 

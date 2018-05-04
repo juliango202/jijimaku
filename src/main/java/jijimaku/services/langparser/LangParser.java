@@ -35,16 +35,20 @@ public interface LangParser {
 
     private final PosTag posTag;
     private final String textForm;      // as it appears in the parsed sentence
-    private final String canonicalForm; // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
+    private final String firstCanonicalForm; // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
+    private final String secondCanonicalForm; // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
 
-    TextToken(PosTag posTag, String textForm, String canonicalForm) {
+    public TextToken(PosTag posTag, String textForm, String firstCanonicalForm, String secondCanonicalForm) {
       if (textForm == null || textForm.isEmpty()) {
         throw new IllegalArgumentException("Cannot create a TextToken from an empty string.");
       }
       this.posTag = posTag;
       this.textForm = textForm;
-      this.canonicalForm = canonicalForm != null && !canonicalForm.isEmpty()
-          ? canonicalForm
+      this.firstCanonicalForm = firstCanonicalForm != null && !firstCanonicalForm.isEmpty()
+          ? firstCanonicalForm
+          : textForm;
+      this.secondCanonicalForm = secondCanonicalForm != null && !secondCanonicalForm.isEmpty()
+          ? secondCanonicalForm
           : textForm;
     }
 
@@ -56,8 +60,12 @@ public interface LangParser {
       return textForm;
     }
 
-    public String getCanonicalForm() {
-      return canonicalForm;
+    public String getFirstCanonicalForm() {
+      return firstCanonicalForm;
+    }
+
+    public String getSecondCanonicalForm() {
+      return secondCanonicalForm;
     }
   }
 

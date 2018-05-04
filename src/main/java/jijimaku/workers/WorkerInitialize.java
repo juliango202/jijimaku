@@ -4,6 +4,7 @@ import java.io.File;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
+import jijimaku.services.langparser.LangParserUDPipe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,7 +12,7 @@ import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
 import jijimaku.AppConfig;
 import jijimaku.services.jijidictionary.JijiDictionary;
-import jijimaku.services.langparser.JapaneseParser;
+import jijimaku.services.langparser.LangParserKuromoji;
 import jijimaku.utils.FileManager;
 
 
@@ -67,7 +68,9 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
 
     // Initialize parser
     LOGGER.info("Instantiate parser...");
-    JapaneseParser langParser = new JapaneseParser(config);
+    //LangParserKuromoji langParser = new LangParserKuromoji(config);
+
+    LangParserUDPipe langParser = new LangParserUDPipe(config, dict.getLanguageFrom());
 
     LOGGER.info("Ready to work!");
 

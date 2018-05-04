@@ -1,15 +1,16 @@
 package jijimaku.services;
 
 import jijimaku.AppConfig;
+import jijimaku.utils.FileManager;
 import jijimaku.utils.SubtitleFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -20,6 +21,8 @@ import jijimaku.services.jijidictionary.JijiDictionaryEntry;
 import jijimaku.services.langparser.LangParser;
 import jijimaku.services.langparser.LangParser.TextToken;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import subtitleFile.FatalParsingException;
 
 
@@ -27,9 +30,15 @@ import subtitleFile.FatalParsingException;
  * Created by julian on 11/23/17.
  */
 public class AnnotationService {
+  private static final Logger LOGGER;
 
-  private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^\\p{InHiragana}+$");
-  private static final Pattern IS_KATAKANA_RE = Pattern.compile("^\\p{InKatakana}+$");
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
+
+  private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^[\\p{InHiragana}\\u30FC]+$");
+  private static final Pattern IS_KATAKANA_RE = Pattern.compile("^[\\p{InKatakana}\\u30FC]+$");
 
   // POS tag that does not represent words
   private static final EnumSet<LangParser.PosTag> POS_TAGS_NOT_WORD = EnumSet.of(
@@ -60,6 +69,27 @@ public class AnnotationService {
   }
 
   /**
+   * Return true if param str is the lemma matched by param dm
+   */
+  private boolean isMatchedLemma(String str, DictionaryMatch dm) {
+    return str.equals(dm.getFirstCanonicalForm()) || str.equals(dm.getSecondCanonicalForm()) || str.equals(dm.getTextForm());
+  }
+
+  /**
+   * Return true if param str contains the lemma matched by param dm
+   */
+  private boolean containsMatchedLemma(String str, DictionaryMatch dm) {
+    return str.contains(dm.getFirstCanonicalForm()) || str.contains(dm.getSecondCanonicalForm()) || str.contains(dm.getTextForm());
+  }
+
+  /**
+   * Return true if param strList contains the lemma matched by param dm
+   */
+  private boolean containsMatchedLemma(List<String> strList, DictionaryMatch dm) {
+    return strList.contains(dm.getFirstCanonicalForm()) || strList.contains(dm.getSecondCanonicalForm()) || strList.contains(dm.getTextForm());
+  }
+
+  /**
    * Search a list of tokens in the dictionary.
    *
    * @return a DictionaryMatch entry if the provided tokens match a definition, null otherwise.
@@ -69,28 +99,65 @@ public class AnnotationService {
       return null;
     }
 
-    String canonicalForm = tokens.stream().map(TextToken::getCanonicalForm).collect(Collectors.joining(""));
-    List<JijiDictionaryEntry> entries = dict.search(canonicalForm);
+    String firstCanonicalForm = tokens.stream().map(TextToken::getFirstCanonicalForm).collect(Collectors.joining(""));
+    List<JijiDictionaryEntry> entries = dict.search(firstCanonicalForm);
+    if (!entries.isEmpty()) {
+      return new DictionaryMatch(tokens, entries);
+    }
 
     // If there is no entry for the canonical form, search the exact text
-    if (entries.isEmpty()) {
-      String textForm = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining(""));
-      entries = dict.search(textForm);
+    String textForm = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining(""));
+    entries = dict.search(textForm);
+    if (!entries.isEmpty()) {
+      return new DictionaryMatch(tokens, entries);
+    }
+
+    // If still no entry, search the second canonical form
+    String secondCanonicalForm = tokens.stream().map(TextToken::getSecondCanonicalForm).collect(Collectors.joining(""));
+    entries = dict.search(secondCanonicalForm);
+    if (!entries.isEmpty()) {
+      return new DictionaryMatch(tokens, entries);
     }
 
     // If still no entry, search for the pronunciation
     // In Japanese sometimes words with kanji are written in kanas for emphasis or simplicity
     // and we want to catch those. Except for one character strings where there are too many results
     // for this to be relevant.
-    if (entries.isEmpty() && canonicalForm.length() > 1) {
-      entries = dict.searchByPronunciation(canonicalForm);
-    }
+//    if (canonicalForm.length() > 1) {
+//      entries = dict.searchByPronunciation(canonicalForm);
+//      if (!entries.isEmpty()) {
+//        return new DictionaryMatch(tokens, entries);
+//      }
+//    }
 
-    if (entries.isEmpty()) {
-      return null;
-    } else {
-      return new DictionaryMatch(tokens, entries);
+    return null;
+  }
+
+  private static final List<String> PART_OF_VERB_CONJUNCTIONS = Arrays.asList(
+      "て", "で", "ちゃ"
+  );
+
+  /**
+   * Filtering pass to merge some SCONJ with the previous VERBS/AUX in Japanese
+   * This is so that for example 継ぎ-まし-て appears as one word in the subtitles
+   */
+  private List<TextToken> mergeJapaneseVerbs(List<TextToken> tokens) {
+    List<TextToken> filteredTokens = new ArrayList<>();
+    for (int i = 0; i < tokens.size(); i++) {
+      TextToken token = tokens.get(i);
+      TextToken lastOk = filteredTokens.isEmpty() ? null : filteredTokens.get(filteredTokens.size() - 1);
+      boolean isPartOfVerbConj = (token.getPartOfSpeech() == LangParser.PosTag.SCONJ && PART_OF_VERB_CONJUNCTIONS.contains(token.getTextForm()));
+      if (lastOk != null
+          && (lastOk.getPartOfSpeech() == LangParser.PosTag.AUX || lastOk.getPartOfSpeech() == LangParser.PosTag.VERB)
+          && isPartOfVerbConj) {
+        TextToken completeVerb = new TextToken(lastOk.getPartOfSpeech(), lastOk.getTextForm() + token.getTextForm(),
+            lastOk.getFirstCanonicalForm(), lastOk.getSecondCanonicalForm());
+        filteredTokens.set(filteredTokens.size() - 1, completeVerb);
+        continue;
+      }
+      filteredTokens.add(token);
     }
+    return filteredTokens;
   }
 
   /**
@@ -100,7 +167,13 @@ public class AnnotationService {
    */
   private List<DictionaryMatch> getDictionaryMatches(String caption) {
     // A syntaxic parse of the caption returns a list of tokens.
-    List<TextToken> captionTokens = langParser.syntaxicParse(caption);
+    List<TextToken> basicTokens = langParser.syntaxicParse(caption);
+    List<TextToken> captionTokens = mergeJapaneseVerbs(basicTokens);
+
+    String parsedTokens = captionTokens.stream().map(textToken -> textToken.getTextForm()).collect (Collectors.joining ("|"));
+
+    LOGGER.debug("original: " + caption);
+    LOGGER.debug("parsed: " + parsedTokens );
 
     // Next we must group tokens together if they is a corresponding definition in the dictionary.
     List<DictionaryMatch> matches = new ArrayList<>();
@@ -157,7 +230,7 @@ public class AnnotationService {
       }
 
       // Ignore user words list
-      if (ignoreWordsList.contains(dm.getTextForm()) || ignoreWordsList.contains(dm.getCanonicalForm())) {
+      if (containsMatchedLemma(ignoreWordsList, dm)) {
         return false;
       }
 
@@ -168,7 +241,7 @@ public class AnnotationService {
       }
 
       // Filter using ignoreFrequency option
-      if (dm.getDictionaryEntries().stream().allMatch(de -> config.getIgnoreFrequencies().contains(de.getFrequency()))) {
+      if (config.getIgnoreFrequencies().contains(dm.getFrequency())) {
         return false;
       }
 
@@ -183,7 +256,7 @@ public class AnnotationService {
       // Each definition is made of several lemmas and several senses
       // Depending on "displayOtherLemma" option, display only the lemma corresponding to the subtitle word, or all lemmas
       String lemmas = def.getLemmas().stream().map(l -> {
-        if (l.equals(match.getCanonicalForm()) || l.equals(match.getTextForm())) {
+        if (isMatchedLemma(l, match)) {
           return SubtitleFile.addStyleToText(l, SubtitleFile.TextStyle.COLOR, color);
         } else if (displayOtherLemma) {
           return l;
@@ -208,7 +281,7 @@ public class AnnotationService {
         if (!inLemma) {
           pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
           // If text word is not in lemma, the match must come from pronounciation => colorize
-          if (!lemmas.contains(match.getCanonicalForm()) && !lemmas.contains(match.getTextForm())) {
+          if (!containsMatchedLemma(lemmas, match)) {
             pronounciationStr = SubtitleFile.addStyleToText(pronounciationStr, SubtitleFile.TextStyle.COLOR, color);
           }
         }
@@ -226,6 +299,7 @@ public class AnnotationService {
    */
   public String[] annotateSubtitleFile(String fileName, String fileContents) throws IOException, FatalParsingException {
     SubtitleFile subtitle = new SubtitleFile(fileName, fileContents, config.getSubtitleStyles());
+    subtitle.addJijimakuMark(dict.getTitle());
 
     // Loop through the subtitle file captions one by one
     while (subtitle.hasNext()) {
