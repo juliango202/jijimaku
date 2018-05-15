@@ -4,6 +4,7 @@ import java.io.File;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
+import jijimaku.services.langparser.LangParser;
 import jijimaku.services.langparser.LangParserUDPipe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +59,7 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
     AppConfig config = new AppConfig(configFile);
 
     // Initialize dictionary
-    LOGGER.info("Loading dictionnary...");
+    LOGGER.info("Loading dictionary...");
     File dictionaryFile = new File(appDirectory + "/" + config.getDictionary());
     if (!dictionaryFile.exists()) {
       LOGGER.error("Could not find the dictionary file {} in directory {}", config.getDictionary(), appDirectory);
@@ -68,10 +69,12 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
 
     // Initialize parser
     LOGGER.info("Instantiate parser...");
-    //LangParserKuromoji langParser = new LangParserKuromoji(config);
-
-    LangParserUDPipe langParser = new LangParserUDPipe(config, dict.getLanguageFrom());
-
+    LangParser langParser;
+    if (dict.getLanguageFrom().equalsIgnoreCase("Japanese")) {
+      langParser = new LangParserKuromoji(config);
+    } else {
+      langParser = new LangParserUDPipe(config, dict.getLanguageFrom());
+    }
     LOGGER.info("Ready to work!");
 
     return new ServicesParam(config, dict, langParser);

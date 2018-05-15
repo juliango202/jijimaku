@@ -11,7 +11,7 @@ import jijimaku.workers.WorkerAnnotate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.SubsDictError;
+import jijimaku.errors.JijimakuError;
 import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
 import jijimaku.utils.FileManager;
@@ -55,7 +55,7 @@ class AppMain {
     // Global exception handler
     // TODO: check and simplify exception flow
     Thread.setDefaultUncaughtExceptionHandler((thr, exc) -> {
-      if (exc instanceof SubsDictError) {
+      if (exc instanceof JijimakuError) {
         if (exc.getMessage() != null && !exc.getMessage().isEmpty()) {
           LOGGER.error(exc.getMessage());
         }
@@ -68,6 +68,8 @@ class AppMain {
     // Initialize GUI
     gui = new AppGui(APP_TITLE, this);
     System.out.println(APP_DESC);
+
+    LOGGER.debug("library path: " + System.getProperty("java.library.path"));
 
     launchInitializationWorker();
     setState(AppState.WAIT_FOR_INITIALIZATION);
@@ -86,7 +88,6 @@ class AppMain {
         } catch (ExecutionException exc) {
           LOGGER.debug("Got exception:", exc);
           LOGGER.error("Initialization worker returned an error. Check the logs.");
-          System.exit(1);
         }
       }
     });
@@ -104,9 +105,9 @@ class AppMain {
           LOGGER.warn("Subtitle annotation task was interrupted.");
         } catch (ExecutionException exc) {
           Throwable originalExc = exc.getCause();
-          if (originalExc instanceof SubsDictError) {
+          if (originalExc instanceof JijimakuError) {
             // Propagate our exceptions to the main error handler
-            throw (SubsDictError) originalExc;
+            throw (JijimakuError) originalExc;
           }
           LOGGER.debug("Got exception:", originalExc);
           LOGGER.error("Subtitle annotation task returned an error. Check the logs.");

@@ -55,7 +55,7 @@ class AppGui extends JFrame implements ActionListener {
     pack();
     setVisible(true);
     this.app = app;
-    fileChooser = new JFileChooser();
+    fileChooser = new JFileChooser("/home/julian/Prog/github.com/jijimaku/test/subtitles");
     fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
     Image image = Toolkit.getDefaultToolkit().getImage(getClass().getClassLoader().getResource("iconJijimaku.png"));
     setIconImage(image);

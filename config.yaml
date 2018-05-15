@@ -1,6 +1,8 @@
 # Name of the dictionary file used to source words definitions
 # The dictionary file must follow the JIJI format => https://github.com/juliango202/jiji
+#dictionary: jiji.freedict.spa-eng2.yaml
 dictionary: jiji.jmdict.yaml
+
 
 # Font-size to use when writing dictionary definitions
 # A low resolution video will need a higher font-size, and vice-versa
@@ -14,6 +16,15 @@ highlightColors:
 - '#AAFFAA'
 - '#FFAAFF'
 - '#AAFFFF'
+
+# The list of PartOfSpeech to annotate
+# The subtitle words with a detected PartOfSpeech not in this list will be ignored
+# See http://universaldependencies.org/u/pos/all.html for the possible values
+partOfSpeechToAnnotate:
+- NOUN
+- VERB
+- ADJ
+- ADV
 
 # Flag to display all lemmas of a defined word or not.
 # When a dictionary definition is associated with several lemmas(e.g. アップデート, アップデイト),
@@ -29,9 +40,11 @@ displayOtherLemma: false
 # NOTE: frequency information while helpfull is often missing and not always reliable
 ignoreFrequencies:
 - 1
+- 2
+- 3
 
 # Ignore words in the list below
-# You can put here the list of words that you already know and thus don't want defined
+# You can put here the list of words that you don't want defined because you already know them
 ignoreWords:
 - あ
 - ああ

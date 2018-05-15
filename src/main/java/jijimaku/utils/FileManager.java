@@ -48,7 +48,8 @@ public class FileManager {
       // If there is no JAR(this is development mode?) just return the current directory
       return ".";
     }
-    return jarDirectory.toString();
+    // Application directory is in the parent of the JAR file
+    return jarDirectory.getParent().toString();
   }
 
   /**

@@ -2,4 +2,5 @@
 !/.gitignore
 build/
 logs
-udpipe
+gradle.properties
+lib/udpipe-models/*.udpipe

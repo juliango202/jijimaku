@@ -1,12 +1,14 @@
 package jijimaku.services.langparser;
 
 import cz.cuni.mff.ufal.udpipe.*;
+import cz.cuni.mff.ufal.udpipe.udpipe_java;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import jijimaku.AppConfig;
+import jijimaku.errors.UnexpectedError;
 import jijimaku.utils.FileManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,40 +37,74 @@ public class LangParserUDPipe implements LangParser {
 
   private Model model;
   private InputFormat tokenizer;
+  private Language language;
 
-  public LangParserUDPipe(AppConfig config, String language) {
-    model = getUDPipeModel(language);
+  public LangParserUDPipe(AppConfig config, String languageStr) {
+    String udpipeNativeLibPath = getUdPipeNativeLibPath();
+    try {
+      udpipe_java.setLibraryPath(udpipeNativeLibPath);
+    } catch (Exception exc) {
+      LOGGER.debug(exc);
+      LOGGER.error("Error while trying to load udpipe native library " + udpipeNativeLibPath);
+      throw new UnexpectedError();
+    }
+    language = Language.valueOf(languageStr.replace(" ", "_"));
+    model = getUDPipeModel();
     tokenizer = model.newTokenizer(Model.getDEFAULT());
+    LOGGER.debug("Parsing using UDPipe for language " + language.toString());
   }
 
-  private Model getUDPipeModel(String language) {
+  private String getUdPipeNativeLibPath() {
+    String baseDir = FileManager.getAppDirectory() + "/lib/udpipe-1.2.0";
+    String archSuffix = System.getProperty("os.arch").contains("64") ? "64" : "32";
+    String osName = System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH);
+    if ((osName.contains("mac")) || (osName.contains("darwin"))) {
+      return baseDir + "/bin-osx/libudpipe_java.dylib";
+    } else if (osName.contains("win")) {
+      return baseDir + "/bin-win" + archSuffix + "/udpipe_java.dll";
+    } else if (osName.contains("nux")) {
+      return baseDir + "/bin-linux" + archSuffix + "/libudpipe_java.so";
+    } else {
+      LOGGER.error("Cannot detect the OS to target the correct UdPipe native lib: " + osName);
+      throw new UnexpectedError();
+    }
+  }
+
+  private Model getUDPipeModel() {
     // Look in app directory for a udpipe model file that matches the dictionary language
     String modelFile = null;
     try (Stream<Path> stream = Files.walk(Paths.get(FileManager.getAppDirectory()), SEARCH_MODEL_MAX_DEPTH)) {
       List<String> models = stream
           .map(String::valueOf)
-          .filter(path -> path.toLowerCase().endsWith(MODEL_EXT) && path.toLowerCase().contains(language.toLowerCase()))
-          .sorted()
+          .filter(path -> path.toLowerCase().endsWith(MODEL_EXT) && path.toLowerCase().contains(language.toString().toLowerCase()))
+          .sorted((p1, p2) -> {
+            try {
+              return Long.compare(Files.size(Paths.get(p2)), Files.size(Paths.get(p1)));
+            } catch (IOException e) {
+              LOGGER.error(String.format("Problem getting file size of %s %s", p1, p2));
+              return 0;
+            }
+          })
           .collect(Collectors.toList());
       if (models.isEmpty()) {
-        LOGGER.error(String.format("Cannot find a parser model file(%s) for the language '%s'.", MODEL_EXT, language));
-        System.exit(1);
+        LOGGER.error(String.format("Cannot find a parser model file(%s) for the language '%s'.", MODEL_EXT, language.toString()));
+        throw new UnexpectedError();
       } else if (models.size() > 1) {
         String allModels = models.stream().collect(Collectors.joining(", "));
-        LOGGER.warn(String.format("Found %d models for language '%s', the first one will be used: %s", models.size(), language, allModels));
+        LOGGER.warn(String.format("Found %d models for language '%s', the largest one will be used: %s", models.size(), language.toString(), allModels));
       }
 
       modelFile = models.get(0);
-      LOGGER.info("Using udpipe model file " + models.get(0));
+      LOGGER.debug("Using udpipe model file " + models.get(0));
     } catch (IOException exc) {
       LOGGER.error("Error while searching for a parser model file("+ MODEL_EXT +").", exc);
-      System.exit(1);
+      throw new UnexpectedError();
     }
 
     Model model = Model.load(modelFile);
     if (model == null) {
       LOGGER.error(String.format("Cannot load parser model from file '%s'", modelFile));
-      System.exit(1);
+      throw new UnexpectedError();
     }
     return model;
   }
@@ -132,10 +169,21 @@ public class LangParserUDPipe implements LangParser {
         if (firstCanonicalForm == null || firstCanonicalForm.isEmpty()) {
           LOGGER.warn(String.format("UDPipe returned an invalid lemma for word %s", writtenForm));
         }
+        if (firstCanonicalForm.equals(writtenForm)) {
+          firstCanonicalForm = null;
+        }
 
         tokens.add(new TextToken(pos, writtenForm, firstCanonicalForm, null));
       }
     }
     return tokens;
+  }
+
+  public Language getLanguage() {
+    return language;
+  }
+
+  public Logger getLogger() {
+    return LOGGER;
   }
 }

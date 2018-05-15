@@ -2,7 +2,6 @@ package jijimaku.services.langparser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +12,7 @@ import com.atilika.kuromoji.unidic.Token;
 import com.atilika.kuromoji.unidic.Tokenizer;
 
 import jijimaku.AppConfig;
+import jijimaku.errors.UnexpectedError;
 import jijimaku.utils.FileManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,9 +62,14 @@ public class LangParserKuromoji implements LangParser {
       } else {
         tokenizer = new Tokenizer.Builder().build();
       }
-    } catch (IOException e) {
-      e.printStackTrace();
-      System.exit(1);
+      LOGGER.debug("Parsing Japanese language using the kuromoji-unidict library");
+    } catch (NoClassDefFoundError exc) {
+      LOGGER.error("Could not find the kuromoji parser classes. Please see the jijimaku documentation concerning the Japanese language (you must download the kuromoji-unidic-0.9.0.jar file and place it in the /lib directory.");
+      throw new UnexpectedError();
+    } catch (IOException exc) {
+      LOGGER.debug(exc);
+      LOGGER.error("Error while initializing the kuromoji Japanese parser");
+      throw new UnexpectedError();
     }
   }
 
@@ -147,7 +152,7 @@ public class LangParserKuromoji implements LangParser {
    */
   @Override
   public List<TextToken> syntaxicParse(String text) {
-    // We use kuromoji-unidoct as parsing dictionary (larger)
+    // We use kuromoji-unidict as parsing dictionary (larger)
     // to use the default ipadic, replace the kuromoji JAR and use the following code instead:
     // Tokenizer tokenizer = Tokenizer.builder().mode(Mode.SEARCH).build(); then => token.getBaseForm()
     List<Token> kuroTokens = tokenizer.tokenize(text);
@@ -166,6 +171,14 @@ public class LangParserKuromoji implements LangParser {
        PosTag pos = getTokenPosTag(previousToken, token, writtenForm);
       return new TextToken(pos, writtenForm, firstCanonicalForm, secondCanonicalForm);
     }).collect(Collectors.toList());
+  }
+
+  public Language getLanguage() {
+    return Language.Japanese;
+  }
+
+  public Logger getLogger() {
+    return LOGGER;
   }
 }
 

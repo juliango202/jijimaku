@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+import jijimaku.errors.JijimakuError;
+import jijimaku.services.langparser.LangParser;
 import jijimaku.utils.SubtitleFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,6 +50,7 @@ public class AppConfig {
   private final Boolean displayOtherLemma;
   private final List<Integer> ignoreFrequencies;
   private final List<String> ignoreWords;
+  private final List<String> partOfSpeechToAnnotate;
 
   private final String assStyles;
   private final Map<String, String> properNouns;
@@ -77,6 +80,7 @@ public class AppConfig {
     displayOtherLemma = getConfigValue("displayOtherLemma", Boolean.class);
     ignoreFrequencies = getConfigValue("ignoreFrequencies", (new ArrayList<Integer>()).getClass());
     ignoreWords = getConfigValue("ignoreWords", (new ArrayList<String>()).getClass());
+    partOfSpeechToAnnotate = getConfigValue("partOfSpeechToAnnotate", (new ArrayList<String>()).getClass());
 
     properNouns = new HashMap<>();  // Ignore fo now
     assStyles = getConfigValue("assStyles", String.class);
@@ -123,7 +127,7 @@ public class AppConfig {
    */
   public List<String> getHighlightColors() {
     if (highlightColors != null && highlightColors.contains(null)) {
-      throw new AssertionError("highlightColors list should not contain null");
+      throw new JijimakuError("highlightColors list should not contain null");
     }
     return highlightColors != null ? highlightColors : new ArrayList<>(Arrays.asList("#FFFFFF"));
   }
@@ -140,7 +144,7 @@ public class AppConfig {
    */
   public List<Integer> getIgnoreFrequencies() {
     if (ignoreFrequencies != null && ignoreFrequencies.contains(null)) {
-      throw new AssertionError("ignoreFrequencies list should not contain null");
+      throw new JijimakuError("ignoreFrequencies list should not contain null");
     }
     return ignoreFrequencies != null ? ignoreFrequencies : new ArrayList<>();
   }
@@ -150,9 +154,26 @@ public class AppConfig {
    */
   public List<String> getIgnoreWords() {
     if (ignoreWords != null && ignoreWords.contains(null)) {
-      throw new AssertionError("ignoreWords list should not contain null");
+      throw new JijimakuError("ignoreWords list should not contain null");
     }
     return ignoreWords != null ? ignoreWords : new ArrayList<>();
+  }
+
+  /**
+   * List of PartOfSpeech that should be annotated (the others will be ignored).
+   */
+  public EnumSet<LangParser.PosTag> getPartOfSpeechToAnnotate() {
+    if (partOfSpeechToAnnotate != null && partOfSpeechToAnnotate.contains(null)) {
+      throw new JijimakuError("partOfSpeechToAnnotate list should not contain null");
+    }
+    List<String> posListStr = partOfSpeechToAnnotate != null ? partOfSpeechToAnnotate : new ArrayList<>();
+    try {
+      List<LangParser.PosTag> posList = posListStr.stream().map(p -> LangParser.PosTag.valueOf(p)).collect(Collectors.toList());
+      return EnumSet.copyOf(posList);
+    } catch (IllegalArgumentException | NullPointerException exc) {
+      LOGGER.debug(exc);
+      throw new JijimakuError("The partOfSpeechToAnnotate list in config.yaml contains an invalid value");
+    }
   }
 
   /**
