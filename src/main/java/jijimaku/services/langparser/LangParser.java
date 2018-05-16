@@ -101,7 +101,7 @@ public interface LangParser {
     private final String firstCanonicalForm; // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
     private final String secondCanonicalForm; // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
 
-    TextToken(PosTag posTag, String textForm, String firstCanonicalForm, String secondCanonicalForm) {
+    public TextToken(PosTag posTag, String textForm, String firstCanonicalForm, String secondCanonicalForm) {
       if (textForm == null || textForm.isEmpty()) {
         throw new IllegalArgumentException("Cannot create a TextToken from an empty string.");
       }
@@ -132,38 +132,9 @@ public interface LangParser {
     }
   }
 
-  /**
-   * Filtering pass to merge some SCONJ with the previous VERBS/AUX in Japanese.
-   * This is so that for example 継ぎ-まし-て appears as one word in the subtitles
-   * TODO: see to move this in the word highlight step only
-   */
-  List<String> PART_OF_VERB_CONJUNCTIONS = Arrays.asList(
-      "て", "で", "ちゃ"
-  );
-  default List<TextToken> mergeJapaneseVerbs(List<TextToken> tokens) {
-    List<TextToken> filteredTokens = new ArrayList<>();
-    for (TextToken token : tokens) {
-      TextToken lastOk = filteredTokens.isEmpty() ? null : filteredTokens.get(filteredTokens.size() - 1);
-      boolean isPartOfVerbConj = (token.getPartOfSpeech() == PosTag.SCONJ && PART_OF_VERB_CONJUNCTIONS.contains(token.getTextForm()));
-      if (lastOk != null
-          && (lastOk.getPartOfSpeech() == PosTag.AUX || lastOk.getPartOfSpeech() == PosTag.VERB)
-          && isPartOfVerbConj) {
-        TextToken completeVerb = new TextToken(lastOk.getPartOfSpeech(), lastOk.getTextForm() + token.getTextForm(),
-            lastOk.getFirstCanonicalForm(), lastOk.getSecondCanonicalForm());
-        filteredTokens.set(filteredTokens.size() - 1, completeVerb);
-        continue;
-      }
-      filteredTokens.add(token);
-    }
-    return filteredTokens;
-  }
-
 
   default List<TextToken> parse(String text) {
     List<TextToken> tokens = this.syntaxicParse(text);
-    if (getLanguage() == Language.Japanese) {
-      tokens = mergeJapaneseVerbs(tokens);
-    }
 
     // Log details on how the text was parsed for debugging
     String parsedTokens = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining("|"));

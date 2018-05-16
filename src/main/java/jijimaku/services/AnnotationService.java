@@ -125,17 +125,6 @@ public class AnnotationService {
       return new DictionaryMatch(tokens, entries, ws);
     }
 
-    // If still no entry, search for the pronunciation
-    // In Japanese sometimes words with kanji are written in kanas for emphasis or simplicity
-    // and we want to catch those. Except for one character strings where there are too many results
-    // for this to be relevant.
-    //    if (canonicalForm.length() > 1) {
-    //      entries = dict.searchByPronunciation(canonicalForm);
-    //      if (!entries.isEmpty()) {
-    //        return new DictionaryMatch(tokens, entries);
-    //      }
-    //    }
-
     return null;
   }
 
@@ -149,6 +138,11 @@ public class AnnotationService {
   private List<DictionaryMatch> getDictionaryMatches(String caption) {
     // A syntaxic parse of the caption returns a list of tokens.
     List<TextToken> captionTokens = langParser.parse(caption);
+
+    // Apply language specific filter
+    if (langRules != null) {
+      captionTokens = langRules.filterTokens(captionTokens);
+    }
 
     // Next we must group tokens together if they is a corresponding definition in the dictionary.
     List<DictionaryMatch> matches = new ArrayList<>();
