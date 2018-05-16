@@ -6,7 +6,7 @@
 plugins {
   id 'java'
   id 'application'
-  // id 'checkstyle'
+  id 'checkstyle'
   id "org.sonarqube" version "2.5"
 }
 
@@ -18,6 +18,11 @@ project.version = '1.0-SNAPSHOT'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
+
+// Checkstyle configuration
+checkstyle {
+  toolVersion "8.3"
+}
 
 repositories {
   jcenter()
@@ -74,27 +79,6 @@ distributions {
 // Disable TAR archive, for now a ZIP archive is enough
 tasks.distTar.enabled = false
 
-
-
-
-
-
-//task checkstyle(type: Checkstyle) {
-//  project.ext.checkstyleVersion = '8.3'
-//
-//  source 'src'
-//  include '**/*.java'
-//  showViolations true
-//  ignoreFailures false
-//  maxWarnings 0
-//  maxErrors 0
-//
-//  dependencies{
-//    assert project.hasProperty("checkstyleVersion")
-//    checkstyle "com.puppycrawl.tools:checkstyle:${checkstyleVersion}"
-//  }
-//  classpath = files()
-//}
 
 //build.dependsOn('checkstyle')
 //check.dependsOn('checkstyle')

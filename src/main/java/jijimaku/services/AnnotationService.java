@@ -1,11 +1,5 @@
 package jijimaku.services;
 
-import jijimaku.AppConfig;
-import jijimaku.services.langrules.LangRules;
-
-import jijimaku.utils.FileManager;
-import jijimaku.utils.SubtitleFile;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,20 +8,24 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import jijimaku.AppConfig;
 import jijimaku.models.DictionaryMatch;
 import jijimaku.models.ServicesParam;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.jijidictionary.JijiDictionaryEntry;
 import jijimaku.services.langparser.LangParser;
 import jijimaku.services.langparser.LangParser.TextToken;
+import jijimaku.services.langrules.LangRules;
+import jijimaku.utils.FileManager;
+import jijimaku.utils.SubtitleFile;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import subtitleFile.FatalParsingException;
 
-
 /**
- * Created by julian on 11/23/17.
+ * Service that add the dictionary anotation to the subtitles.
  */
 public class AnnotationService {
   private static final Logger LOGGER;
@@ -43,14 +41,6 @@ public class AnnotationService {
           LangParser.PosTag.SYM,
           LangParser.PosTag.NUM,
           LangParser.PosTag.X
-  );
-
-  private static final EnumSet<LangParser.PosTag> POS_TAGS_IGNORE_WORD = EnumSet.of(
-          LangParser.PosTag.PART,
-          LangParser.PosTag.DET,
-          LangParser.PosTag.CCONJ,
-          LangParser.PosTag.SCONJ,
-          LangParser.PosTag.AUX
   );
 
   private final AppConfig config;
@@ -84,21 +74,21 @@ public class AnnotationService {
   }
 
   /**
-   * Return true if param str is the lemma matched by param dm
+   * Return true if param str is the lemma matched by param dm.
    */
   private boolean isMatchedLemma(String str, DictionaryMatch dm) {
     return str.equals(dm.getFirstCanonicalForm()) || str.equals(dm.getSecondCanonicalForm()) || str.equals(dm.getTextForm());
   }
 
   /**
-   * Return true if param str contains the lemma matched by param dm
+   * Return true if param str contains the lemma matched by param dm.
    */
   private boolean containsMatchedLemma(String str, DictionaryMatch dm) {
     return str.contains(dm.getFirstCanonicalForm()) || str.contains(dm.getSecondCanonicalForm()) || str.contains(dm.getTextForm());
   }
 
   /**
-   * Return true if param strList contains the lemma matched by param dm
+   * Return true if param strList contains the lemma matched by param dm.
    */
   private boolean containsMatchedLemma(List<String> strList, DictionaryMatch dm) {
     return strList.contains(dm.getFirstCanonicalForm()) || strList.contains(dm.getSecondCanonicalForm()) || strList.contains(dm.getTextForm());
@@ -139,12 +129,12 @@ public class AnnotationService {
     // In Japanese sometimes words with kanji are written in kanas for emphasis or simplicity
     // and we want to catch those. Except for one character strings where there are too many results
     // for this to be relevant.
-//    if (canonicalForm.length() > 1) {
-//      entries = dict.searchByPronunciation(canonicalForm);
-//      if (!entries.isEmpty()) {
-//        return new DictionaryMatch(tokens, entries);
-//      }
-//    }
+    //    if (canonicalForm.length() > 1) {
+    //      entries = dict.searchByPronunciation(canonicalForm);
+    //      if (!entries.isEmpty()) {
+    //        return new DictionaryMatch(tokens, entries);
+    //      }
+    //    }
 
     return null;
   }
@@ -267,7 +257,7 @@ public class AnnotationService {
   }
 
   /**
-   * Clean up caption text before parsing
+   * Clean up caption text before parsing.
    */
   private String cleanCaptionText(String caption) {
     String cleaned = caption.trim();
@@ -298,7 +288,7 @@ public class AnnotationService {
       List<String> alreadyDefinedWords = new ArrayList<>();
       List<String> annotations = new ArrayList<>();
       List<DictionaryMatch> filteredMatches = getFilteredMatches(currentCaptionText);
-      LOGGER.debug("dictionary matches: " + filteredMatches.stream().map(dm -> dm.getTextForm()).collect(Collectors.joining(", ")));
+      LOGGER.debug("dictionary matches: " + filteredMatches.stream().map(DictionaryMatch::getTextForm).collect(Collectors.joining(", ")));
 
       for (DictionaryMatch match : filteredMatches) {
         String color = colors.iterator().next();

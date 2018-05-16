@@ -52,7 +52,7 @@ public class DictionaryMatch {
    * This gives the best results to represent the frequency of a match with several entries.
    */
   public Integer getFrequency() {
-     OptionalInt minFrequency = dictionaryEntries.stream()
+    OptionalInt minFrequency = dictionaryEntries.stream()
         .filter(de -> de.getFrequency() != null)
         .mapToInt(JijiDictionaryEntry::getFrequency)
         .min();

@@ -1,32 +1,36 @@
 package jijimaku.services.langparser;
 
-import cz.cuni.mff.ufal.udpipe.*;
-import cz.cuni.mff.ufal.udpipe.udpipe_java;
-
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import jijimaku.AppConfig;
-import jijimaku.errors.UnexpectedError;
-import jijimaku.utils.FileManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import jijimaku.errors.UnexpectedError;
+import jijimaku.utils.FileManager;
+
+import cz.cuni.mff.ufal.udpipe.InputFormat;
+import cz.cuni.mff.ufal.udpipe.Model;
+import cz.cuni.mff.ufal.udpipe.ProcessingError;
+import cz.cuni.mff.ufal.udpipe.Sentence;
+import cz.cuni.mff.ufal.udpipe.Word;
+import cz.cuni.mff.ufal.udpipe.Words;
+import cz.cuni.mff.ufal.udpipe.udpipe_java;
 
 //-----------------------------------------------------------------------
 // Use UDPipe(http://lindat.mff.cuni.cz/services/udpipe/) to parse languages
 //-----------------------------------------------------------------------
 
-public class LangParserUDPipe implements LangParser {
+public class LangParserUdpipe implements LangParser {
   private static final Logger LOGGER;
+
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();
@@ -39,7 +43,7 @@ public class LangParserUDPipe implements LangParser {
   private InputFormat tokenizer;
   private Language language;
 
-  public LangParserUDPipe(AppConfig config, String languageStr) {
+  public LangParserUdpipe(String languageStr) {
     String udpipeNativeLibPath = getUdPipeNativeLibPath();
     try {
       udpipe_java.setLibraryPath(udpipeNativeLibPath);
@@ -49,7 +53,7 @@ public class LangParserUDPipe implements LangParser {
       throw new UnexpectedError();
     }
     language = Language.valueOf(languageStr.replace(" ", "_"));
-    model = getUDPipeModel();
+    model = getUdpipeModel();
     tokenizer = model.newTokenizer(Model.getDEFAULT());
     LOGGER.debug("Parsing using UDPipe for language " + language.toString());
   }
@@ -70,9 +74,9 @@ public class LangParserUDPipe implements LangParser {
     }
   }
 
-  private Model getUDPipeModel() {
+  private Model getUdpipeModel() {
     // Look in app directory for a udpipe model file that matches the dictionary language
-    String modelFile = null;
+    String modelFile;
     try (Stream<Path> stream = Files.walk(Paths.get(FileManager.getAppDirectory()), SEARCH_MODEL_MAX_DEPTH)) {
       List<String> models = stream
           .map(String::valueOf)
@@ -91,13 +95,14 @@ public class LangParserUDPipe implements LangParser {
         throw new UnexpectedError();
       } else if (models.size() > 1) {
         String allModels = models.stream().collect(Collectors.joining(", "));
-        LOGGER.warn(String.format("Found %d models for language '%s', the largest one will be used: %s", models.size(), language.toString(), allModels));
+        LOGGER.warn(String.format("Found %d models for language '%s', the largest one will be used: %s",
+            models.size(), language.toString(), allModels));
       }
 
       modelFile = models.get(0);
       LOGGER.debug("Using udpipe model file " + models.get(0));
     } catch (IOException exc) {
-      LOGGER.error("Error while searching for a parser model file("+ MODEL_EXT +").", exc);
+      LOGGER.error("Error while searching for a parser model file(" + MODEL_EXT + ").", exc);
       throw new UnexpectedError();
     }
 
@@ -110,7 +115,7 @@ public class LangParserUDPipe implements LangParser {
   }
 
   /**
-   * Use the UDPipe API to parse sentences in a text
+   * Use the UDPipe API to parse sentences in a text.
    */
   private List<Sentence> parseSentences(String text) {
     tokenizer.setText(text);
@@ -157,7 +162,7 @@ public class LangParserUDPipe implements LangParser {
           LOGGER.warn(String.format("UDPipe returned an invalid or empty word while parsing %s", text));
           continue;
         }
-        PosTag pos = null;
+        PosTag pos;
         try {
           pos = PosTag.valueOf(w.getUpostag());
         } catch (IllegalArgumentException exc) {

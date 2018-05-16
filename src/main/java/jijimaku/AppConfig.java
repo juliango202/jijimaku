@@ -10,15 +10,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import jijimaku.errors.JijimakuError;
-import jijimaku.services.langparser.LangParser;
-import jijimaku.utils.SubtitleFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
+import jijimaku.errors.JijimakuError;
 import jijimaku.errors.UnexpectedError;
+import jijimaku.services.langparser.LangParser;
 import jijimaku.utils.FileManager;
+import jijimaku.utils.SubtitleFile;
 
 
 /**

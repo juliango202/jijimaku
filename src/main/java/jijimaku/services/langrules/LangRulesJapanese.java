@@ -1,14 +1,15 @@
 package jijimaku.services.langrules;
 
-import jijimaku.models.DictionaryMatch;
-import jijimaku.utils.FileManager;
+import java.util.regex.Pattern;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.regex.Pattern;
+import jijimaku.models.DictionaryMatch;
+import jijimaku.utils.FileManager;
 
 /**
- * Japanese specific rules used when annotating subtitles
+ * Japanese specific rules used when annotating subtitles.
  */
 public class LangRulesJapanese implements LangRules {
   private static final Logger LOGGER;
@@ -40,7 +41,7 @@ public class LangRulesJapanese implements LangRules {
 
     // For now ignore all-kana matches except if there is a verb
     // TODO: This is not ideal for beginners so it should be an option in config.yaml
-    if((IS_HIRAGANA_RE.matcher(match.getTextForm()).matches() || IS_KATAKANA_RE.matcher(match.getTextForm()).matches())
+    if ((IS_HIRAGANA_RE.matcher(match.getTextForm()).matches() || IS_KATAKANA_RE.matcher(match.getTextForm()).matches())
         && !match.hasVerb()) {
       return true;
     }

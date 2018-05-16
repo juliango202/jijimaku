@@ -4,16 +4,16 @@ import java.io.File;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
-import jijimaku.services.langparser.LangParser;
-import jijimaku.services.langparser.LangParserUDPipe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import jijimaku.AppConfig;
 import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
-import jijimaku.AppConfig;
 import jijimaku.services.jijidictionary.JijiDictionary;
+import jijimaku.services.langparser.LangParser;
 import jijimaku.services.langparser.LangParserKuromoji;
+import jijimaku.services.langparser.LangParserUdpipe;
 import jijimaku.utils.FileManager;
 
 
@@ -73,7 +73,7 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
     if (dict.getLanguageFrom().equalsIgnoreCase("Japanese")) {
       langParser = new LangParserKuromoji(config);
     } else {
-      langParser = new LangParserUDPipe(config, dict.getLanguageFrom());
+      langParser = new LangParserUdpipe(dict.getLanguageFrom());
     }
     LOGGER.info("Ready to work!");
 

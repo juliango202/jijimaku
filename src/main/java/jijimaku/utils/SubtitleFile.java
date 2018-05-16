@@ -12,12 +12,12 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jijimaku.errors.JijimakuError;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import jijimaku.errors.JijimakuError;
 import jijimaku.errors.UnexpectedError;
 
 import subtitleFile.Caption;

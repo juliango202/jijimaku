@@ -1,17 +1,19 @@
 package jijimaku.services.langparser;
 
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.Logger;
 
-// Parse a sentence into grammatical words
-// This interface can be implemented by different classes to parse different languages
+/**
+ * Parse a sentence into grammatical words.
+ * This interface can be implemented by different classes to parse different languages
+ */
 public interface LangParser {
 
+  @SuppressWarnings("unused")
   enum Language {
     Ancient_Greek,
     Arabic,
@@ -99,7 +101,7 @@ public interface LangParser {
     private final String firstCanonicalForm; // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
     private final String secondCanonicalForm; // canonical/base form of a word, e.g. infinitive for verbs, etc.. (used in dictionary look-ups)
 
-    public TextToken(PosTag posTag, String textForm, String firstCanonicalForm, String secondCanonicalForm) {
+    TextToken(PosTag posTag, String textForm, String firstCanonicalForm, String secondCanonicalForm) {
       if (textForm == null || textForm.isEmpty()) {
         throw new IllegalArgumentException("Cannot create a TextToken from an empty string.");
       }
@@ -131,7 +133,7 @@ public interface LangParser {
   }
 
   /**
-   * Filtering pass to merge some SCONJ with the previous VERBS/AUX in Japanese
+   * Filtering pass to merge some SCONJ with the previous VERBS/AUX in Japanese.
    * This is so that for example 継ぎ-まし-て appears as one word in the subtitles
    * TODO: see to move this in the word highlight step only
    */
@@ -140,12 +142,11 @@ public interface LangParser {
   );
   default List<TextToken> mergeJapaneseVerbs(List<TextToken> tokens) {
     List<TextToken> filteredTokens = new ArrayList<>();
-    for (int i = 0; i < tokens.size(); i++) {
-      TextToken token = tokens.get(i);
+    for (TextToken token : tokens) {
       TextToken lastOk = filteredTokens.isEmpty() ? null : filteredTokens.get(filteredTokens.size() - 1);
-      boolean isPartOfVerbConj = (token.getPartOfSpeech() == LangParser.PosTag.SCONJ && PART_OF_VERB_CONJUNCTIONS.contains(token.getTextForm()));
+      boolean isPartOfVerbConj = (token.getPartOfSpeech() == PosTag.SCONJ && PART_OF_VERB_CONJUNCTIONS.contains(token.getTextForm()));
       if (lastOk != null
-          && (lastOk.getPartOfSpeech() == LangParser.PosTag.AUX || lastOk.getPartOfSpeech() == LangParser.PosTag.VERB)
+          && (lastOk.getPartOfSpeech() == PosTag.AUX || lastOk.getPartOfSpeech() == PosTag.VERB)
           && isPartOfVerbConj) {
         TextToken completeVerb = new TextToken(lastOk.getPartOfSpeech(), lastOk.getTextForm() + token.getTextForm(),
             lastOk.getFirstCanonicalForm(), lastOk.getSecondCanonicalForm());
@@ -165,7 +166,7 @@ public interface LangParser {
     }
 
     // Log details on how the text was parsed for debugging
-    String parsedTokens = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining ("|"));
+    String parsedTokens = tokens.stream().map(TextToken::getTextForm).collect(Collectors.joining("|"));
     getLogger().debug("original: " + text);
     getLogger().debug("parsed: " + parsedTokens);
 

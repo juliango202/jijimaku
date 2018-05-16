@@ -10,24 +10,24 @@ import java.util.stream.IntStream;
 
 import com.atilika.kuromoji.unidic.Token;
 import com.atilika.kuromoji.unidic.Tokenizer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import jijimaku.AppConfig;
 import jijimaku.errors.UnexpectedError;
 import jijimaku.utils.FileManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-
-//-----------------------------------------------------------------------
-// Parse a Japanese sentence into words via the KUROMOJI(unidoct) library
-//-----------------------------------------------------------------------
-
+/**
+ * Parse a Japanese sentence into words via the KUROMOJI(unidoct) library.
+ */
 public class LangParserKuromoji implements LangParser {
   private static final Logger LOGGER;
+
   static {
     System.setProperty("logDir", FileManager.getLogsDirectory());
     LOGGER = LogManager.getLogger();
   }
+
   private static final String MISSING_FORM = "*";
 
   private static final List<String> PUNCTUATION_TOKENS = Arrays.asList(
@@ -64,7 +64,9 @@ public class LangParserKuromoji implements LangParser {
       }
       LOGGER.debug("Parsing Japanese language using the kuromoji-unidict library");
     } catch (NoClassDefFoundError exc) {
-      LOGGER.error("Could not find the kuromoji parser classes. Please see the jijimaku documentation concerning the Japanese language (you must download the kuromoji-unidic-0.9.0.jar file and place it in the /lib directory.");
+      LOGGER.error("Could not find the kuromoji parser classes. Please see the jijimaku "
+          + "documentation concerning the Japanese language (you must download the kuromoji-unidic-0.9.0.jar "
+          + "file and place it in the /lib directory.");
       throw new UnexpectedError();
     } catch (IOException exc) {
       LOGGER.debug(exc);
@@ -166,9 +168,9 @@ public class LangParserKuromoji implements LangParser {
           ? token.getWrittenBaseForm()
           : null;
       String secondCanonicalForm = !token.getLemma().equals(MISSING_FORM)
-              ? token.getLemma()
-              : null;
-       PosTag pos = getTokenPosTag(previousToken, token, writtenForm);
+          ? token.getLemma()
+          : null;
+      PosTag pos = getTokenPosTag(previousToken, token, writtenForm);
       return new TextToken(pos, writtenForm, firstCanonicalForm, secondCanonicalForm);
     }).collect(Collectors.toList());
   }
