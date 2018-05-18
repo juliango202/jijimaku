@@ -4,3 +4,5 @@ build/
 logs
 gradle.properties
 lib/udpipe-models/*.udpipe
+*.mp4
+*.ass

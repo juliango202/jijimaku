@@ -18,7 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.JijimakuError;
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 
 import subtitleFile.Caption;
 import subtitleFile.FatalParsingException;
@@ -71,7 +71,7 @@ public class SubtitleFile {
         break;
       default:
         LOGGER.error("invalid subtitle file extension file: {}", fileName);
-        throw new UnexpectedError();
+        throw new UnexpectedCriticalError();
     }
 
     // Convert String to InputStream to match subtitleFile API
@@ -111,11 +111,11 @@ public class SubtitleFile {
     } catch (UnsupportedEncodingException exc) {
       LOGGER.error("Cannot understand subtitle styles definition. Possibly some characters not encoded in UTF8?");
       LOGGER.debug("Got exception when parsing styles {}", stylesStr, exc);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     } catch (FatalParsingException | IOException exc) {
       LOGGER.error("The subtitle styles seem invalid");
       LOGGER.debug("Got exception when parsing styles {}", stylesStr, exc);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
   }
 
@@ -139,7 +139,8 @@ public class SubtitleFile {
       // Same thing but only search for newline(<br>) at word boundary i.e. space
       return "\\b" + expression.replaceAll(" ", "(?:\\\\s|<br />)*") + "\\b";
     } else {
-      throw new JijimakuError("findWordRegexp not implemented for wordSeparator " + wordSeparator);
+      LOGGER.error("findWordRegexp not implemented for wordSeparator " + wordSeparator);
+      throw new UnexpectedCriticalError();
     }
   }
 

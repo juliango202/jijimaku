@@ -17,7 +17,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 
 /**
  * Utility class to manage file IO & encoding.
@@ -41,7 +41,7 @@ public class FileManager {
       jarDirectory = Paths.get(FileManager.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent();
     } catch (URISyntaxException exc) {
       LOGGER.error("Cannot retrieve app directory", exc);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
     File[] files = jarDirectory.toFile().listFiles((dir1, name) -> name.endsWith(".jar"));
     if (files.length == 0) {

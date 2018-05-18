@@ -12,7 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.utils.FileManager;
 
 //private Trie atrie;
@@ -134,8 +134,8 @@ public class JijiDictionary {
       });
     } catch (IOException exc) {
       LOGGER.error("Problem reading jijiDictFile {}", jijiDictFile.getAbsolutePath());
-      LOGGER.debug("Exception details", exc);
-      throw new UnexpectedError();
+      LOGGER.debug(exc);
+      throw new UnexpectedCriticalError();
     }
   }
 

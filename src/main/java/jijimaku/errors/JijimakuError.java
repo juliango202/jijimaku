@@ -2,11 +2,11 @@ package jijimaku.errors;
 
 @SuppressWarnings("serial")
 public class JijimakuError extends RuntimeException {
-  public JijimakuError() {
+  JijimakuError() {
     super();
   }
 
-  public JijimakuError(String message) {
+  JijimakuError(String message) {
     super(message);
   }
 }

@@ -23,7 +23,7 @@ import javax.swing.WindowConstants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.utils.FileManager;
 import jijimaku.utils.TextAreaOutputStream;
 
@@ -81,7 +81,7 @@ class AppGui extends JFrame implements ActionListener {
 
     if (!(pane.getLayout() instanceof BorderLayout)) {
       LOGGER.error("Container doesn't use BorderLayout!");
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
 
     createConsoleTextare(pane);

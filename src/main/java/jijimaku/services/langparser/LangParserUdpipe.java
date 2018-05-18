@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.utils.FileManager;
 
 import cz.cuni.mff.ufal.udpipe.InputFormat;
@@ -50,7 +50,7 @@ public class LangParserUdpipe implements LangParser {
     } catch (Exception exc) {
       LOGGER.debug(exc);
       LOGGER.error("Error while trying to load udpipe native library " + udpipeNativeLibPath);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
     language = Language.valueOf(languageStr.replace(" ", "_"));
     model = getUdpipeModel();
@@ -70,7 +70,7 @@ public class LangParserUdpipe implements LangParser {
       return baseDir + "/bin-linux" + archSuffix + "/libudpipe_java.so";
     } else {
       LOGGER.error("Cannot detect the OS to target the correct UdPipe native lib: " + osName);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
   }
 
@@ -92,7 +92,7 @@ public class LangParserUdpipe implements LangParser {
           .collect(Collectors.toList());
       if (models.isEmpty()) {
         LOGGER.error(String.format("Cannot find a parser model file(%s) for the language '%s'.", MODEL_EXT, language.toString()));
-        throw new UnexpectedError();
+        throw new UnexpectedCriticalError();
       } else if (models.size() > 1) {
         String allModels = models.stream().collect(Collectors.joining(", "));
         LOGGER.warn(String.format("Found %d models for language '%s', the largest one will be used: %s",
@@ -103,13 +103,13 @@ public class LangParserUdpipe implements LangParser {
       LOGGER.debug("Using udpipe model file " + models.get(0));
     } catch (IOException exc) {
       LOGGER.error("Error while searching for a parser model file(" + MODEL_EXT + ").", exc);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
 
     Model model = Model.load(modelFile);
     if (model == null) {
       LOGGER.error(String.format("Cannot load parser model from file '%s'", modelFile));
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
     return model;
   }

@@ -14,7 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import jijimaku.AppConfig;
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.utils.FileManager;
 
 /**
@@ -67,11 +67,11 @@ public class LangParserKuromoji implements LangParser {
       LOGGER.error("Could not find the kuromoji parser classes. Please see the jijimaku "
           + "documentation concerning the Japanese language (you must download the kuromoji-unidic-0.9.0.jar "
           + "file and place it in the /lib directory.");
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     } catch (IOException exc) {
       LOGGER.debug(exc);
       LOGGER.error("Error while initializing the kuromoji Japanese parser");
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
   }
 

@@ -8,7 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import jijimaku.AppConfig;
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.models.ServicesParam;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.langparser.LangParser;
@@ -53,7 +53,7 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
     File configFile = new File(appDirectory + "/" + configFilePath);
     if (!configFile.exists()) {
       LOGGER.error("Could not find config file {} in directory {}", configFilePath, appDirectory);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
 
     AppConfig config = new AppConfig(configFile);
@@ -63,7 +63,7 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
     File dictionaryFile = new File(appDirectory + "/" + config.getDictionary());
     if (!dictionaryFile.exists()) {
       LOGGER.error("Could not find the dictionary file {} in directory {}", config.getDictionary(), appDirectory);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
     JijiDictionary dict = new JijiDictionary(dictionaryFile);
 
