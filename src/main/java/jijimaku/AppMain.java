@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.JijimakuError;
 import jijimaku.errors.UnexpectedCriticalError;
-import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
 import jijimaku.utils.FileManager;
 import jijimaku.workers.WorkerAnnotate;
@@ -80,6 +79,23 @@ class AppMain {
     setState(AppState.WAIT_FOR_INITIALIZATION);
   }
 
+  private void handleWorkerException(Exception exc) {
+    if (exc instanceof InterruptedException) {
+      LOGGER.debug(exc);
+      LOGGER.warn("Worker thread was interrupted.");
+      Thread.currentThread().interrupt();
+    } else if (exc instanceof ExecutionException) {
+      Throwable originalExc = exc.getCause();
+      if (originalExc instanceof JijimakuError) {
+        // Propagate our exceptions to the main error handler
+        throw (JijimakuError) originalExc;
+      }
+      LOGGER.debug(originalExc);
+      LOGGER.error("Worker thread returned an error. Check the logs.");
+      throw new UnexpectedCriticalError();
+    }
+  }
+
   private void launchInitializationWorker() {
     WorkerInitialize initializer = new WorkerInitialize(CONFIG_FILE);
     initializer.addPropertyChangeListener(evt -> {
@@ -88,19 +104,8 @@ class AppMain {
           services = initializer.get();
           initialized = true;
           setState(searchDirectory != null ? AppState.ANNOTATE_SUBTITLES : AppState.WAIT_FOR_DIRECTORY_CHOICE);
-        } catch (InterruptedException exc) {
-          LOGGER.debug(exc);
-          LOGGER.warn("Initialization worker was interrupted.");
-          Thread.currentThread().interrupt();
-        } catch (ExecutionException exc) {
-          Throwable originalExc = exc.getCause();
-          if (originalExc instanceof JijimakuError) {
-            // Propagate our exceptions to the main error handler
-            throw (JijimakuError) originalExc;
-          }
-          LOGGER.debug(originalExc);
-          LOGGER.error("Initialization worker returned an error. Check the logs.");
-          throw new UnexpectedCriticalError();
+        } catch (InterruptedException  | ExecutionException exc) {
+          handleWorkerException(exc);
         }
       }
     });
@@ -114,19 +119,8 @@ class AppMain {
         try {
           annotator.get();
           setState(AppState.WAIT_FOR_DIRECTORY_CHOICE);
-        } catch (InterruptedException exc) {
-          LOGGER.debug(exc);
-          LOGGER.warn("Subtitle annotation task was interrupted.");
-          Thread.currentThread().interrupt();
-        } catch (ExecutionException exc) {
-          Throwable originalExc = exc.getCause();
-          if (originalExc instanceof JijimakuError) {
-            // Propagate our exceptions to the main error handler
-            throw (JijimakuError) originalExc;
-          }
-          LOGGER.debug(originalExc);
-          LOGGER.error("Subtitle annotation task returned an error. Check the logs.");
-          throw new UnexpectedError();
+        } catch (InterruptedException  | ExecutionException exc) {
+          handleWorkerException(exc);
         }
       }
     });
