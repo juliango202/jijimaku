@@ -1,11 +1,13 @@
 package jijimaku.services.langparser;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Logger;
+
+import jijimaku.errors.UnexpectedCriticalError;
 
 /**
  * Parse a sentence into grammatical words.
@@ -152,6 +154,18 @@ public interface LangParser {
 
   default String getWordSeparator() {
     return LANGUAGES_WITHOUT_SPACES.contains(getLanguage()) ? "" : " ";
+  }
+
+  default Language getLanguageFromStr(String languageStr) {
+    try {
+      return Language.valueOf(languageStr);
+    } catch (IllegalArgumentException exc) {
+      getLogger().debug(exc);
+      getLogger().error("Unsupported language '{}', should be one of: {}",
+          languageStr,
+          Stream.of(Language.values()).map(Enum::toString).collect(Collectors.joining(", ")));
+      throw new UnexpectedCriticalError();
+    }
   }
 
   // Returned the language supported by the parser

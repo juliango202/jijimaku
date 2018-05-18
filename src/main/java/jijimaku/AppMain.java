@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.JijimakuError;
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
 import jijimaku.utils.FileManager;
@@ -53,14 +54,18 @@ class AppMain {
 
   private AppMain() {
     // Global exception handler
-    // TODO: check and simplify exception flow
     Thread.setDefaultUncaughtExceptionHandler((thr, exc) -> {
       if (exc instanceof JijimakuError) {
         if (exc.getMessage() != null && !exc.getMessage().isEmpty()) {
           LOGGER.error(exc.getMessage());
         }
+        if (exc instanceof UnexpectedCriticalError) {
+          setState(AppState.CRITICAL_ERROR);
+          return;
+        }
       } else {
-        LOGGER.error("Got an unexpected error", exc);
+        LOGGER.debug(exc);
+        LOGGER.error("Got an unexpected error. Check the logs.");
       }
       setState(AppState.WAIT_FOR_DIRECTORY_CHOICE);
     });
@@ -86,8 +91,14 @@ class AppMain {
         } catch (InterruptedException exc) {
           LOGGER.warn("Initialization worker was interrupted.");
         } catch (ExecutionException exc) {
-          LOGGER.debug("Got exception:", exc);
+          Throwable originalExc = exc.getCause();
+          if (originalExc instanceof JijimakuError) {
+            // Propagate our exceptions to the main error handler
+            throw (JijimakuError) originalExc;
+          }
+          LOGGER.debug(originalExc);
           LOGGER.error("Initialization worker returned an error. Check the logs.");
+          throw new UnexpectedCriticalError();
         }
       }
     });
@@ -109,7 +120,7 @@ class AppMain {
             // Propagate our exceptions to the main error handler
             throw (JijimakuError) originalExc;
           }
-          LOGGER.debug("Got exception:", originalExc);
+          LOGGER.debug(originalExc);
           LOGGER.error("Subtitle annotation task returned an error. Check the logs.");
           throw new UnexpectedError();
         }
@@ -128,6 +139,7 @@ class AppMain {
    * Use a simple state driven behaviour.
    */
   private enum AppState {
+    CRITICAL_ERROR,
     WAIT_FOR_INITIALIZATION,
     WAIT_FOR_DIRECTORY_CHOICE,
     ANNOTATE_SUBTITLES
@@ -142,6 +154,10 @@ class AppMain {
     switch (state) {
       case WAIT_FOR_INITIALIZATION:
         // Nothing to do but wait
+        break;
+
+      case CRITICAL_ERROR:
+        gui.toggleDirectorySelector(false);
         break;
 
       case WAIT_FOR_DIRECTORY_CHOICE:

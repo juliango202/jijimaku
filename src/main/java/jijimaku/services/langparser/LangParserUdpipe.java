@@ -52,7 +52,7 @@ public class LangParserUdpipe implements LangParser {
       LOGGER.error("Error while trying to load udpipe native library " + udpipeNativeLibPath);
       throw new UnexpectedCriticalError();
     }
-    language = Language.valueOf(languageStr.replace(" ", "_"));
+    language = getLanguageFromStr(languageStr.replace(" ", "_"));
     model = getUdpipeModel();
     tokenizer = model.newTokenizer(Model.getDEFAULT());
     LOGGER.debug("Parsing using UDPipe for language " + language.toString());
@@ -79,36 +79,38 @@ public class LangParserUdpipe implements LangParser {
     String modelFile;
     try (Stream<Path> stream = Files.walk(Paths.get(FileManager.getAppDirectory()), SEARCH_MODEL_MAX_DEPTH)) {
       List<String> models = stream
-          .map(String::valueOf)
-          .filter(path -> path.toLowerCase().endsWith(MODEL_EXT) && path.toLowerCase().contains(language.toString().toLowerCase()))
+          .filter(path -> path.getFileName().toString().endsWith(MODEL_EXT)
+              && path.getFileName().toString().toLowerCase().startsWith(language.toString().toLowerCase()))
           .sorted((p1, p2) -> {
             try {
-              return Long.compare(Files.size(Paths.get(p2)), Files.size(Paths.get(p1)));
+              return Long.compare(Files.size(p2), Files.size(p1));
             } catch (IOException e) {
-              LOGGER.error(String.format("Problem getting file size of %s %s", p1, p2));
+              LOGGER.error("Problem getting file size of {} {}", p1, p2);
               return 0;
             }
           })
+          .map(String::valueOf)
           .collect(Collectors.toList());
       if (models.isEmpty()) {
-        LOGGER.error(String.format("Cannot find a parser model file(%s) for the language '%s'.", MODEL_EXT, language.toString()));
+        LOGGER.error("Cannot find a parser model file({}) for the language '{}'.", MODEL_EXT, language.toString());
         throw new UnexpectedCriticalError();
       } else if (models.size() > 1) {
         String allModels = models.stream().collect(Collectors.joining(", "));
-        LOGGER.warn(String.format("Found %d models for language '%s', the largest one will be used: %s",
-            models.size(), language.toString(), allModels));
+        LOGGER.warn("Found {} models for language '{}', the largest one will be used: {}",
+            models.size(), language.toString(), allModels);
       }
 
       modelFile = models.get(0);
       LOGGER.debug("Using udpipe model file " + models.get(0));
     } catch (IOException exc) {
-      LOGGER.error("Error while searching for a parser model file(" + MODEL_EXT + ").", exc);
+      LOGGER.debug(exc);
+      LOGGER.error("Error while searching for a parser model file '{}'", MODEL_EXT);
       throw new UnexpectedCriticalError();
     }
 
     Model model = Model.load(modelFile);
     if (model == null) {
-      LOGGER.error(String.format("Cannot load parser model from file '%s'", modelFile));
+      LOGGER.error("Cannot load parser model from file '{}'", modelFile);
       throw new UnexpectedCriticalError();
     }
     return model;
@@ -127,7 +129,7 @@ public class LangParserUdpipe implements LangParser {
       sentence = new Sentence();
     }
     if (error.occurred()) {
-      LOGGER.warn(String.format("UDPipe returned an error while parsing sentences in %s: %s", text, error.getMessage()));
+      LOGGER.warn("UDPipe returned an error while parsing sentences in {}: {}", text, error.getMessage());
       return new ArrayList<>();
     }
     return sentences;
@@ -144,12 +146,12 @@ public class LangParserUdpipe implements LangParser {
 
       model.tag(s, Model.getDEFAULT(), error);
       if (error.occurred()) {
-        LOGGER.warn(String.format("UDPipe returned an error while tagging %s: %s", text, error.getMessage()));
+        LOGGER.warn("UDPipe returned an error while tagging {}: {}", text, error.getMessage());
         continue;
       }
       model.parse(s, Model.getDEFAULT(), error);
       if (error.occurred()) {
-        LOGGER.warn(String.format("UDPipe returned an error while parsing %s: %s", text, error.getMessage()));
+        LOGGER.warn("UDPipe returned an error while parsing {}: {}", text, error.getMessage());
         continue;
       }
 
@@ -159,20 +161,20 @@ public class LangParserUdpipe implements LangParser {
 
         String writtenForm = w.getForm();
         if (writtenForm == null || writtenForm.isEmpty()) {
-          LOGGER.warn(String.format("UDPipe returned an invalid or empty word while parsing %s", text));
+          LOGGER.warn("UDPipe returned an invalid or empty word while parsing {}", text);
           continue;
         }
         PosTag pos;
         try {
           pos = PosTag.valueOf(w.getUpostag());
         } catch (IllegalArgumentException exc) {
-          LOGGER.warn(String.format("UDPipe returned an invalid POS tag for word %s", writtenForm));
+          LOGGER.warn("UDPipe returned an invalid POS tag for word {}", writtenForm);
           continue;
         }
 
         String firstCanonicalForm = w.getLemma();
         if (firstCanonicalForm == null || firstCanonicalForm.isEmpty()) {
-          LOGGER.warn(String.format("UDPipe returned an invalid lemma for word %s", writtenForm));
+          LOGGER.warn("UDPipe returned an invalid lemma for word {}", writtenForm);
         }
         if (firstCanonicalForm.equals(writtenForm)) {
           firstCanonicalForm = null;

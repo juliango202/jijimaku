@@ -135,10 +135,10 @@ public class AppConfig {
     try {
       return paramType.cast(configMap.get(paramKey));
     } catch (ClassCastException exc) {
-      LOGGER.error("Config parameter {} in file {} is not in the expected format(see logs). "
+      LOGGER.warn("Config parameter {} in file {} is not in the expected format(see logs). "
           + "Check the documentation for the proper syntax.", paramKey, configFilePath);
       LOGGER.debug(exc);
-      throw new UnexpectedCriticalError();
+      return defaultValue;
     }
   }
 

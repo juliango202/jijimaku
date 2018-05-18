@@ -40,7 +40,8 @@ public class FileManager {
     try {
       jarDirectory = Paths.get(FileManager.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent();
     } catch (URISyntaxException exc) {
-      LOGGER.error("Cannot retrieve app directory", exc);
+      LOGGER.debug(exc);
+      LOGGER.error("Cannot retrieve app directory. Check the logs.");
       throw new UnexpectedCriticalError();
     }
     File[] files = jarDirectory.toFile().listFiles((dir1, name) -> name.endsWith(".jar"));

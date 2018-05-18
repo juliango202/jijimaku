@@ -52,7 +52,7 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
     LOGGER.info("Loading configuration...");
     File configFile = new File(appDirectory + "/" + configFilePath);
     if (!configFile.exists()) {
-      LOGGER.error("Could not find config file {} in directory {}", configFilePath, appDirectory);
+      LOGGER.error("Could not find config file {} in directory '{}'", configFilePath, appDirectory);
       throw new UnexpectedCriticalError();
     }
 

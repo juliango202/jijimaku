@@ -81,7 +81,7 @@ public class JijiDictionary {
       yamlMap.keySet().stream().forEach(key -> {
         if (key.equals(DICT_INFO_KEY)) {
           this.parseAboutThisDictionary(yamlMap.get(key));
-          LOGGER.info(String.format("Using %s dictionary '%s'", languageFrom, title));
+          LOGGER.info("Using {} dictionary '{}'", languageFrom, title);
           return;
         }
 

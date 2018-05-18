@@ -64,6 +64,7 @@ public class LangParserKuromoji implements LangParser {
       }
       LOGGER.debug("Parsing Japanese language using the kuromoji-unidict library");
     } catch (NoClassDefFoundError exc) {
+      LOGGER.debug(exc);
       LOGGER.error("Could not find the kuromoji parser classes. Please see the jijimaku "
           + "documentation concerning the Japanese language (you must download the kuromoji-unidic-0.9.0.jar "
           + "file and place it in the /lib directory.");

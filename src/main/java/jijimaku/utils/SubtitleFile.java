@@ -17,8 +17,8 @@ import org.apache.commons.io.input.BOMInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.JijimakuError;
 import jijimaku.errors.UnexpectedCriticalError;
+import jijimaku.errors.UnexpectedError;
 
 import subtitleFile.Caption;
 import subtitleFile.FatalParsingException;
@@ -70,8 +70,8 @@ public class SubtitleFile {
         timedTextFormat = new FormatSRT();
         break;
       default:
-        LOGGER.error("invalid subtitle file extension file: {}", fileName);
-        throw new UnexpectedCriticalError();
+        LOGGER.error("invalid subtitle file extension: {}", fileName);
+        throw new UnexpectedError();
     }
 
     // Convert String to InputStream to match subtitleFile API
