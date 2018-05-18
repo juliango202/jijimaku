@@ -91,6 +91,7 @@ class AppMain {
         } catch (InterruptedException exc) {
           LOGGER.debug(exc);
           LOGGER.warn("Initialization worker was interrupted.");
+          throw new UnexpectedCriticalError();
         } catch (ExecutionException exc) {
           Throwable originalExc = exc.getCause();
           if (originalExc instanceof JijimakuError) {
@@ -116,6 +117,7 @@ class AppMain {
         } catch (InterruptedException exc) {
           LOGGER.debug(exc);
           LOGGER.warn("Subtitle annotation task was interrupted.");
+          throw new UnexpectedError();
         } catch (ExecutionException exc) {
           Throwable originalExc = exc.getCause();
           if (originalExc instanceof JijimakuError) {

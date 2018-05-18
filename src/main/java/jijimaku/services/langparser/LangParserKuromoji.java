@@ -177,7 +177,7 @@ public class LangParserKuromoji implements LangParser {
   }
 
   public Language getLanguage() {
-    return Language.Japanese;
+    return Language.JAPANESE;
   }
 
   public Logger getLogger() {
