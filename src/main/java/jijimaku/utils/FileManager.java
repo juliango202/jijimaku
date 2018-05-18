@@ -84,13 +84,12 @@ public class FileManager {
   }
 
   public static void writeStringArrayToFile(String fileFullPath, String[] lines) throws IOException {
-    BufferedWriter bw = Files.newBufferedWriter(Paths.get(fileFullPath), StandardCharsets.UTF_8);
-    for (String line : lines) {
-      bw.write(line);
-      bw.newLine();
+    try (BufferedWriter bw = Files.newBufferedWriter(Paths.get(fileFullPath), StandardCharsets.UTF_8)){
+      for (String line : lines) {
+        bw.write(line);
+        bw.newLine();
+      }
     }
-    bw.flush();
-    bw.close();
   }
 }
 

@@ -89,6 +89,7 @@ class AppMain {
           initialized = true;
           setState(searchDirectory != null ? AppState.ANNOTATE_SUBTITLES : AppState.WAIT_FOR_DIRECTORY_CHOICE);
         } catch (InterruptedException exc) {
+          LOGGER.debug(exc);
           LOGGER.warn("Initialization worker was interrupted.");
         } catch (ExecutionException exc) {
           Throwable originalExc = exc.getCause();
@@ -113,6 +114,7 @@ class AppMain {
           annotator.get();
           setState(AppState.WAIT_FOR_DIRECTORY_CHOICE);
         } catch (InterruptedException exc) {
+          LOGGER.debug(exc);
           LOGGER.warn("Subtitle annotation task was interrupted.");
         } catch (ExecutionException exc) {
           Throwable originalExc = exc.getCause();

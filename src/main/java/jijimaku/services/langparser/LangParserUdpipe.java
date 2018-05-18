@@ -175,8 +175,8 @@ public class LangParserUdpipe implements LangParser {
         String firstCanonicalForm = w.getLemma();
         if (firstCanonicalForm == null || firstCanonicalForm.isEmpty()) {
           LOGGER.warn("UDPipe returned an invalid lemma for word {}", writtenForm);
-        }
-        if (firstCanonicalForm.equals(writtenForm)) {
+          firstCanonicalForm = null;
+        } else if (firstCanonicalForm.equals(writtenForm)) {
           firstCanonicalForm = null;
         }
 

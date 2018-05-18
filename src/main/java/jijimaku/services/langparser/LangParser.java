@@ -69,10 +69,6 @@ public interface LangParser {
     Vietnamese
   }
 
-  List<Language> LANGUAGES_WITHOUT_SPACES = Arrays.asList(
-      Language.Japanese, Language.Chinese, Language.Vietnamese
-  );
-
   // Part Of Speech universal tags
   // See http://universaldependencies.org/u/pos/all.html
   enum PosTag {
@@ -153,7 +149,10 @@ public interface LangParser {
   }
 
   default String getWordSeparator() {
-    return LANGUAGES_WITHOUT_SPACES.contains(getLanguage()) ? "" : " ";
+    List<Language> languagesWithoutSpaces = Arrays.asList(
+        Language.Japanese, Language.Chinese, Language.Vietnamese
+    );
+    return languagesWithoutSpaces.contains(getLanguage()) ? "" : " ";
   }
 
   default Language getLanguageFromStr(String languageStr) {
