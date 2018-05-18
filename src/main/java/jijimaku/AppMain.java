@@ -6,12 +6,11 @@ import java.util.concurrent.ExecutionException;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker.StateValue;
 
-import jijimaku.errors.UnexpectedError;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.JijimakuError;
-import jijimaku.errors.UnexpectedCriticalError;
+import jijimaku.errors.UnexpectedError;
 import jijimaku.models.ServicesParam;
 import jijimaku.utils.FileManager;
 import jijimaku.workers.WorkerAnnotate;

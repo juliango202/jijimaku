@@ -1,5 +1,7 @@
 package jijimaku;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,8 +21,6 @@ import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.services.langparser.LangParser.PosTag;
 import jijimaku.utils.FileManager;
 import jijimaku.utils.SubtitleFile;
-
-import static java.util.stream.Collectors.toList;
 
 
 /**
