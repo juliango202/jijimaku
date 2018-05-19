@@ -23,7 +23,7 @@ import javax.swing.WindowConstants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.utils.FileManager;
 import jijimaku.utils.TextAreaOutputStream;
 
@@ -55,7 +55,7 @@ class AppGui extends JFrame implements ActionListener {
     pack();
     setVisible(true);
     this.app = app;
-    fileChooser = new JFileChooser();
+    fileChooser = new JFileChooser("/home/julian/Prog/github.com/jijimaku/test/subtitles");
     fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
     Image image = Toolkit.getDefaultToolkit().getImage(getClass().getClassLoader().getResource("iconJijimaku.png"));
     setIconImage(image);
@@ -70,7 +70,7 @@ class AppGui extends JFrame implements ActionListener {
     if (imgUrl != null) {
       return new ImageIcon(imgUrl, description);
     } else {
-      System.err.println("Couldn't find file: " + path);
+      LOGGER.warn("Couldn't find icon file: {}", path);
       return null;
     }
   }
@@ -81,7 +81,7 @@ class AppGui extends JFrame implements ActionListener {
 
     if (!(pane.getLayout() instanceof BorderLayout)) {
       LOGGER.error("Container doesn't use BorderLayout!");
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
 
     createConsoleTextare(pane);

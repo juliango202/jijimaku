@@ -1,66 +1,85 @@
+/**
+ * gradle build => build project and distribution packages
+ * gradle installDist => to create an image of the application in build/install/projectName
+ */
 
 plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.1'
   id 'java'
+  id 'application'
   id 'checkstyle'
   id "org.sonarqube" version "2.5"
+}
+
+// Set the class that should be executed as the application entry point
+mainClassName = "jijimaku.AppMain"
+
+// Set project version, this will be part of the generated distributions filenames
+project.version = '1.0-SNAPSHOT'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+// Checkstyle configuration
+checkstyle {
+  toolVersion "8.3"
 }
 
 repositories {
   jcenter()
   maven { url 'https://jitpack.io' }
+  flatDir { dirs 'lib/udpipe-1.2.0' }
 }
 
 dependencies {
   compile group: 'commons-io', name: 'commons-io', version: '2.5'
   compile group: 'org.yaml', name: 'snakeyaml', version: '1.18'
   compile group: 'com.ibm.icu', name: 'icu4j', version: '59.1'
-  compile group: 'org.ahocorasick', name: 'ahocorasick', version: '0.4.0'
   compile group: 'com.atilika.kuromoji', name: 'kuromoji-unidic', version: '0.9.0'
   compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.9.1'
   compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.9.1'
+
+  //compile group: 'cz.cuni.mff.ufal.udpipe', name: 'udpipe', version: '1.1.0'
+  compile name: 'udpipe'
 
   // No Maven package available, import via jitpack.io
   compile 'com.github.JDaren:subtitleConverter:-SNAPSHOT'
 }
 
-jar {
-  manifest {
-    attributes 'Main-Class': 'jijimaku.AppMain'
-  }
-}
-
 task wrapper(type: Wrapper) {
-  gradleVersion = '4.2.1'
-}
-
-task run(type: JavaExec) {
-  classpath = sourceSets.main.runtimeClasspath
-
-  main = 'jijimaku.AppMain'
-
-  // arguments to pass to the application
-  //args 'appArg1'
+  gradleVersion = '4.5.1'
 }
 
 
-task checkstyle(type: Checkstyle) {
-  project.ext.checkstyleVersion = '8.3'
+// Configure distribution package ----------------------
+// =====================================================
 
-  source 'src'
-  include '**/*.java'
-  showViolations true
-  ignoreFailures false
-  maxWarnings 0
-  maxErrors 0
+// Add udpipe native binaries to the distribution package
+applicationDistribution.from("lib/udpipe-1.2.0") {
+  include "bin-*/*.*"
+  into "lib/udpipe-1.2.0"
+}
 
-  dependencies{
-    assert project.hasProperty("checkstyleVersion")
-    checkstyle "com.puppycrawl.tools:checkstyle:${checkstyleVersion}"
+// Add config.yaml file  to the distribution package
+applicationDistribution.from("config.yaml") { into "" }
+
+// TEMP: copy dictionary for debug
+applicationDistribution.from("jiji.jmdict.yaml") { into "" }
+applicationDistribution.from("jiji.freedict.spa-eng2.yaml") { into "" }
+
+// Exclude the Japanese kuromoji parser because we want to provide it as a separate file
+// NOTE: it seems applicationDistribution.exclude(...) does not work in gradle 4.5.1
+distributions {
+  main {
+    contents {
+      exclude('**/kuromoji-unidic-*')
+    }
   }
-  classpath = files()
 }
 
-build.dependsOn('checkstyle')
-check.dependsOn('checkstyle')
+// Disable TAR archive, for now a ZIP archive is enough
+tasks.distTar.enabled = false
+
+
+//build.dependsOn('checkstyle')
+//check.dependsOn('checkstyle')
 

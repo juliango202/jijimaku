@@ -1,7 +1,6 @@
 package jijimaku.models;
 
 import jijimaku.AppConfig;
-import jijimaku.utils.SubtitleFile;
 import jijimaku.services.jijidictionary.JijiDictionary;
 import jijimaku.services.langparser.LangParser;
 

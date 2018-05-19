@@ -17,7 +17,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.UnexpectedCriticalError;
 
 /**
  * Utility class to manage file IO & encoding.
@@ -40,15 +40,17 @@ public class FileManager {
     try {
       jarDirectory = Paths.get(FileManager.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent();
     } catch (URISyntaxException exc) {
-      LOGGER.error("Cannot retrieve app directory", exc);
-      throw new UnexpectedError();
+      LOGGER.debug(exc);
+      LOGGER.error("Cannot retrieve app directory. Check the logs.");
+      throw new UnexpectedCriticalError();
     }
     File[] files = jarDirectory.toFile().listFiles((dir1, name) -> name.endsWith(".jar"));
     if (files.length == 0) {
       // If there is no JAR(this is development mode?) just return the current directory
       return ".";
     }
-    return jarDirectory.toString();
+    // Application directory is in the parent of the JAR file
+    return jarDirectory.getParent().toString();
   }
 
   /**
@@ -82,13 +84,12 @@ public class FileManager {
   }
 
   public static void writeStringArrayToFile(String fileFullPath, String[] lines) throws IOException {
-    BufferedWriter bw = Files.newBufferedWriter(Paths.get(fileFullPath), StandardCharsets.UTF_8);
-    for (String line : lines) {
-      bw.write(line);
-      bw.newLine();
+    try (BufferedWriter bw = Files.newBufferedWriter(Paths.get(fileFullPath), StandardCharsets.UTF_8)) {
+      for (String line : lines) {
+        bw.write(line);
+        bw.newLine();
+      }
     }
-    bw.flush();
-    bw.close();
   }
 }
 

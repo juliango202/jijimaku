@@ -7,11 +7,13 @@ import javax.swing.SwingWorker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.UnexpectedError;
-import jijimaku.models.ServicesParam;
 import jijimaku.AppConfig;
+import jijimaku.errors.UnexpectedCriticalError;
+import jijimaku.models.ServicesParam;
 import jijimaku.services.jijidictionary.JijiDictionary;
-import jijimaku.services.langparser.JapaneseParser;
+import jijimaku.services.langparser.LangParser;
+import jijimaku.services.langparser.LangParserKuromoji;
+import jijimaku.services.langparser.LangParserUdpipe;
 import jijimaku.utils.FileManager;
 
 
@@ -50,25 +52,29 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
     LOGGER.info("Loading configuration...");
     File configFile = new File(appDirectory + "/" + configFilePath);
     if (!configFile.exists()) {
-      LOGGER.error("Could not find config file {} in directory {}", configFilePath, appDirectory);
-      throw new UnexpectedError();
+      LOGGER.error("Could not find config file {} in directory '{}'", configFilePath, appDirectory);
+      throw new UnexpectedCriticalError();
     }
 
     AppConfig config = new AppConfig(configFile);
 
     // Initialize dictionary
-    LOGGER.info("Loading dictionnary...");
+    LOGGER.info("Loading dictionary...");
     File dictionaryFile = new File(appDirectory + "/" + config.getDictionary());
     if (!dictionaryFile.exists()) {
       LOGGER.error("Could not find the dictionary file {} in directory {}", config.getDictionary(), appDirectory);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
     JijiDictionary dict = new JijiDictionary(dictionaryFile);
 
     // Initialize parser
     LOGGER.info("Instantiate parser...");
-    JapaneseParser langParser = new JapaneseParser(config);
-
+    LangParser langParser;
+    if (dict.getLanguageFrom().equalsIgnoreCase("Japanese")) {
+      langParser = new LangParserKuromoji(config);
+    } else {
+      langParser = new LangParserUdpipe(dict.getLanguageFrom());
+    }
     LOGGER.info("Ready to work!");
 
     return new ServicesParam(config, dict, langParser);

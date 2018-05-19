@@ -6,15 +6,15 @@ import java.util.concurrent.ExecutionException;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker.StateValue;
 
-import jijimaku.workers.WorkerInitialize;
-import jijimaku.workers.WorkerAnnotate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.SubsDictError;
-import jijimaku.errors.UnexpectedError;
+import jijimaku.errors.JijimakuError;
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.models.ServicesParam;
 import jijimaku.utils.FileManager;
+import jijimaku.workers.WorkerAnnotate;
+import jijimaku.workers.WorkerInitialize;
 
 /**
  * Launch Jijimaku and handle application states.
@@ -35,6 +35,9 @@ class AppMain {
           + "and words definitions at the top.\n\n"
           + "See config.yaml for options.\n";
 
+  private static final String APP_ISSUE_INFO = "\n(If you encounter a bug you can open an issue on GitHub "
+      + "at https://github.com/juliango202/jijimaku/issues/new)\n\n";
+
   private static final String CONFIG_FILE = "config.yaml";
 
   private static final String[] VALID_SUBFILE_EXT = {"srt","ass"};
@@ -53,15 +56,21 @@ class AppMain {
 
   private AppMain() {
     // Global exception handler
-    // TODO: check and simplify exception flow
     Thread.setDefaultUncaughtExceptionHandler((thr, exc) -> {
-      if (exc instanceof SubsDictError) {
+      if (exc instanceof JijimakuError) {
         if (exc.getMessage() != null && !exc.getMessage().isEmpty()) {
           LOGGER.error(exc.getMessage());
         }
+        if (exc instanceof UnexpectedCriticalError) {
+          System.out.println(APP_ISSUE_INFO);
+          setState(AppState.CRITICAL_ERROR);
+          return;
+        }
       } else {
-        LOGGER.error("Got an unexpected error", exc);
+        LOGGER.debug(exc);
+        LOGGER.error("Got an unexpected error. Check the logs.");
       }
+      System.out.println(APP_ISSUE_INFO);
       setState(AppState.WAIT_FOR_DIRECTORY_CHOICE);
     });
 
@@ -69,8 +78,27 @@ class AppMain {
     gui = new AppGui(APP_TITLE, this);
     System.out.println(APP_DESC);
 
+    LOGGER.debug("library path: " + System.getProperty("java.library.path"));
+
     launchInitializationWorker();
     setState(AppState.WAIT_FOR_INITIALIZATION);
+  }
+
+  private void handleWorkerException(Exception exc) {
+    if (exc instanceof InterruptedException) {
+      LOGGER.debug(exc);
+      LOGGER.warn("Worker thread was interrupted.");
+      Thread.currentThread().interrupt();
+    } else if (exc instanceof ExecutionException) {
+      Throwable originalExc = exc.getCause();
+      if (originalExc instanceof JijimakuError) {
+        // Propagate our exceptions to the main error handler
+        throw (JijimakuError) originalExc;
+      }
+      LOGGER.debug(originalExc);
+      LOGGER.error("Worker thread returned an error. Check the logs.");
+      throw new UnexpectedCriticalError();
+    }
   }
 
   private void launchInitializationWorker() {
@@ -81,12 +109,8 @@ class AppMain {
           services = initializer.get();
           initialized = true;
           setState(searchDirectory != null ? AppState.ANNOTATE_SUBTITLES : AppState.WAIT_FOR_DIRECTORY_CHOICE);
-        } catch (InterruptedException exc) {
-          LOGGER.warn("Initialization worker was interrupted.");
-        } catch (ExecutionException exc) {
-          LOGGER.debug("Got exception:", exc);
-          LOGGER.error("Initialization worker returned an error. Check the logs.");
-          System.exit(1);
+        } catch (InterruptedException  | ExecutionException exc) {
+          handleWorkerException(exc);
         }
       }
     });
@@ -100,17 +124,8 @@ class AppMain {
         try {
           annotator.get();
           setState(AppState.WAIT_FOR_DIRECTORY_CHOICE);
-        } catch (InterruptedException exc) {
-          LOGGER.warn("Subtitle annotation task was interrupted.");
-        } catch (ExecutionException exc) {
-          Throwable originalExc = exc.getCause();
-          if (originalExc instanceof SubsDictError) {
-            // Propagate our exceptions to the main error handler
-            throw (SubsDictError) originalExc;
-          }
-          LOGGER.debug("Got exception:", originalExc);
-          LOGGER.error("Subtitle annotation task returned an error. Check the logs.");
-          throw new UnexpectedError();
+        } catch (InterruptedException  | ExecutionException exc) {
+          handleWorkerException(exc);
         }
       }
     });
@@ -127,6 +142,7 @@ class AppMain {
    * Use a simple state driven behaviour.
    */
   private enum AppState {
+    CRITICAL_ERROR,
     WAIT_FOR_INITIALIZATION,
     WAIT_FOR_DIRECTORY_CHOICE,
     ANNOTATE_SUBTITLES
@@ -141,6 +157,10 @@ class AppMain {
     switch (state) {
       case WAIT_FOR_INITIALIZATION:
         // Nothing to do but wait
+        break;
+
+      case CRITICAL_ERROR:
+        gui.toggleDirectorySelector(false);
         break;
 
       case WAIT_FOR_DIRECTORY_CHOICE:

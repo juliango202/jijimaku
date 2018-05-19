@@ -17,6 +17,7 @@ import org.apache.commons.io.input.BOMInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.errors.UnexpectedError;
 
 import subtitleFile.Caption;
@@ -69,7 +70,7 @@ public class SubtitleFile {
         timedTextFormat = new FormatSRT();
         break;
       default:
-        LOGGER.error("invalid subtitle file extension file: {}", fileName);
+        LOGGER.error("invalid subtitle file extension: {}", fileName);
         throw new UnexpectedError();
     }
 
@@ -91,8 +92,7 @@ public class SubtitleFile {
     timedText.description = JIJIMAKU_SIGNATURE;
     annotationCaptions = new TreeMap<>();
 
-    // Initialization: add jijimaku mark and set style to Default
-    addJijimakuMark();
+    // Initialization: set style to Default
     timedText.captions.values().stream().forEach(c -> c.style = styles.get("Default"));
 
     captionIter = timedText.captions.entrySet().iterator();
@@ -111,11 +111,11 @@ public class SubtitleFile {
     } catch (UnsupportedEncodingException exc) {
       LOGGER.error("Cannot understand subtitle styles definition. Possibly some characters not encoded in UTF8?");
       LOGGER.debug("Got exception when parsing styles {}", stylesStr, exc);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     } catch (FatalParsingException | IOException exc) {
       LOGGER.error("The subtitle styles seem invalid");
       LOGGER.debug("Got exception when parsing styles {}", stylesStr, exc);
-      throw new UnexpectedError();
+      throw new UnexpectedCriticalError();
     }
   }
 
@@ -125,20 +125,31 @@ public class SubtitleFile {
 
   public String nextCaption() {
     currentCaption = captionIter.next();
-    return currentCaption.getValue().content.replaceAll("<br\\s*/?>", "");
+    return currentCaption.getValue().content;
   }
 
-  public void colorizeCaptionWord(String word, String htmlHexColor) {
-    StringBuilder content = new StringBuilder(currentCaption.getValue().content);
+  private String findWordRegexp(String expression, String wordSeparator) {
+    if (wordSeparator.isEmpty()) {
+      // We want to find the word even if it spread over multiple lines
+      // Solution is from https://stackoverflow.com/a/9896878/257272
+      // Build a regexp with potential new line <br />* after every character except the last one.
+      // (?!$) is a negative lookahead meaning the line below won't match the last character of the String
+      return expression.replaceAll("(.(?!$))", "$1(?:<br />)*");
+    } else if (wordSeparator.equals(" ")) {
+      // Same thing but only search for newline(<br>) at word boundary i.e. space
+      return "\\b" + expression.replaceAll(" ", "(?:\\\\s|<br />)*") + "\\b";
+    } else {
+      LOGGER.error("findWordRegexp not implemented for wordSeparator " + wordSeparator);
+      throw new UnexpectedCriticalError();
+    }
+  }
 
-    // We want to find the word even if it spread over multiple lines
-    // Solution is from https://stackoverflow.com/a/9896878/257272
-    // Build a regexp with potential new line <br />* after every character except the last one.
-    // (?!$) is a negative lookahead meaning the line below won't match the last character of the String
-    String regex = word.replaceAll("(.(?!$))", "$1(?:<br />)*");
-    Matcher matcher = Pattern.compile(regex).matcher(content.toString());
+  public void colorizeCaptionWord(String expression, String htmlHexColor, String wordSeparator) {
+    StringBuilder content = new StringBuilder(currentCaption.getValue().content);
+    String findWordRe = findWordRegexp(expression, wordSeparator);
+    Matcher matcher = Pattern.compile(findWordRe).matcher(content.toString());
     if (!matcher.find()) {
-      LOGGER.debug("Couldn't colorize word {} because it wasn't found in {}", word, content.toString());
+      LOGGER.debug("Couldn't colorize word {} because it wasn't found in {}", expression, content.toString());
       return;
     }
 
@@ -147,13 +158,19 @@ public class SubtitleFile {
     String endStyle = "{\\r}";
     content.insert(matcher.end() + startStyle.length(), endStyle);
 
+    // If there is another match, cancel the coloring because we don't know which one correspond to our annotation
+    if (matcher.find()) {
+      LOGGER.debug("Couldn't colorize word {} because there is several matches in {}", expression, content.toString());
+      return;
+    }
+
     currentCaption.getValue().content = content.toString();
   }
 
   /**
    * Add a short "by Jijimaku" message in the subtitle caption at the start of the video.
    */
-  private void addJijimakuMark() {
+  public void addJijimakuMark(String dictionaryTitle) {
     Integer firstCaptionTimeMs = timedText.captions.entrySet().iterator().next().getKey();
     if (firstCaptionTimeMs == 0) {
       // Rare case, give up
@@ -165,7 +182,7 @@ public class SubtitleFile {
     try {
       TimedTextObject tto = ttff.parseFile("", getClass().getClassLoader().getResourceAsStream("JijimakuMark.ass"));
       Caption jijimakuMark = tto.captions.values().iterator().next();
-      jijimakuMark.content = "★ Definitions by {\\c&AAAAFF&}{\\b1}JIJIMAKU{\\r} using {\\c&FFAAAA&}Jim's Breen Japanese dictionary{\\r}";
+      jijimakuMark.content = "★ Definitions by {\\c&AAAAFF&}{\\b1}JIJIMAKU{\\r} using {\\c&FFAAAA&}" + dictionaryTitle + "{\\r}";
       annotationCaptions.put(0, jijimakuMark);
     } catch (IOException exc) {
       LOGGER.error("Cannot read JijimakuMark.ass.", exc);
