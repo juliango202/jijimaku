@@ -1,6 +1,6 @@
 
-This directory should contains the Universal Dependencies 2.0 Models for UDPipe
-for the languages that you want to process(for example, spanish-ud-2.0-170801.udpipe)
+This directory should contain the Universal Dependencies 2.0 Models for UDPipe
+for the languages that you want to process(for example: "spanish-ud-2.0-170801.udpipe")
 
 The latest version 170801 of the Universal Dependencies 2.0 models can be
 downloaded from LINDAT/CLARIN repository (http://hdl.handle.net/11234/1-2364).
