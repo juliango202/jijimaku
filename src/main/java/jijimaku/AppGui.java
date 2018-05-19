@@ -70,7 +70,7 @@ class AppGui extends JFrame implements ActionListener {
     if (imgUrl != null) {
       return new ImageIcon(imgUrl, description);
     } else {
-      System.err.println("Couldn't find file: " + path);
+      LOGGER.warn("Couldn't find icon file: {}", path);
       return null;
     }
   }

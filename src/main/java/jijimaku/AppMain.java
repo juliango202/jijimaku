@@ -35,6 +35,9 @@ class AppMain {
           + "and words definitions at the top.\n\n"
           + "See config.yaml for options.\n";
 
+  private static final String APP_ISSUE_INFO = "\n(If you encounter a bug you can open an issue on GitHub "
+      + "at https://github.com/juliango202/jijimaku/issues/new)\n\n";
+
   private static final String CONFIG_FILE = "config.yaml";
 
   private static final String[] VALID_SUBFILE_EXT = {"srt","ass"};
@@ -59,6 +62,7 @@ class AppMain {
           LOGGER.error(exc.getMessage());
         }
         if (exc instanceof UnexpectedCriticalError) {
+          System.out.println(APP_ISSUE_INFO);
           setState(AppState.CRITICAL_ERROR);
           return;
         }
@@ -66,6 +70,7 @@ class AppMain {
         LOGGER.debug(exc);
         LOGGER.error("Got an unexpected error. Check the logs.");
       }
+      System.out.println(APP_ISSUE_INFO);
       setState(AppState.WAIT_FOR_DIRECTORY_CHOICE);
     });
 
