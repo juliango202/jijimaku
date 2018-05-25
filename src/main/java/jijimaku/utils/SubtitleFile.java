@@ -223,7 +223,7 @@ public class SubtitleFile {
    * Read a file and return true if it was written by us.
    * (search for app signature in first 5 lines)
    */
-  public static boolean isJijimakuFile(String fileContents) throws IOException {
+  public static boolean isJijimakuFile(String fileContents) {
     return fileContents.contains(JIJIMAKU_SIGNATURE);
   }
 

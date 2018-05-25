@@ -14,7 +14,7 @@ plugins {
 mainClassName = "jijimaku.AppMain"
 
 // Set project version, this will be part of the generated distributions filenames
-project.version = '1.0-SNAPSHOT'
+project.version = '0.95-SNAPSHOT'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -38,7 +38,6 @@ dependencies {
   compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.9.1'
   compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.9.1'
 
-  //compile group: 'cz.cuni.mff.ufal.udpipe', name: 'udpipe', version: '1.1.0'
   compile name: 'udpipe'
 
   // No Maven package available, import via jitpack.io
@@ -62,10 +61,6 @@ applicationDistribution.from("lib/udpipe-1.2.0") {
 // Add config.yaml file  to the distribution package
 applicationDistribution.from("config.yaml") { into "" }
 
-// TEMP: copy dictionary for debug
-applicationDistribution.from("jiji.jmdict.yaml") { into "" }
-applicationDistribution.from("jiji.freedict.spa-eng2.yaml") { into "" }
-
 // Exclude the Japanese kuromoji parser because we want to provide it as a separate file
 // NOTE: it seems applicationDistribution.exclude(...) does not work in gradle 4.5.1
 distributions {
@@ -78,8 +73,3 @@ distributions {
 
 // Disable TAR archive, for now a ZIP archive is enough
 tasks.distTar.enabled = false
-
-
-//build.dependsOn('checkstyle')
-//check.dependsOn('checkstyle')
-

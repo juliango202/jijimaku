@@ -1,25 +1,28 @@
 # Name of the dictionary file used to source words definitions
 # The dictionary file must follow the JIJI format => https://github.com/juliango202/jiji
-#dictionary: jiji.freedict.spa-eng2.yaml
-dictionary: ../jiji/dictionaries/japanese/jmdict_english.jiji.yaml
-
+dictionary: jmdict_english.jiji.yaml
 
 # Font-size to use when writing dictionary definitions
 # A low resolution video will need a higher font-size, and vice-versa
 definitionSize: 9
 
 # List of colors to use successively to highlight the defined words in a subtitle caption.
-# To turn off highlighting, just use one value corresponding to white => '#FFFFFF'
+# For beginners it helps to highlight words in different colors to make parsing easier
+# and to find the correponding definition more quickly. In that case use you can use:
+#- '#FFAAAA'
+#- '#AAAAFF'
+#- '#AAFFAA'
+#- '#FFAAFF'
+#- '#AAFFFF'
+# For more advanced users it's probably better to not highlight words and use
+# only white text(this is the default)
 highlightColors:
-- '#FFAAAA'
-- '#AAAAFF'
-- '#AAFFAA'
-- '#FFAAFF'
-- '#AAFFFF'
+- '#FFFFFF'
 
 # The list of PartOfSpeech to annotate
 # The subtitle words with a detected PartOfSpeech NOT in this list will be ignored
 # See http://universaldependencies.org/u/pos/all.html for the possible values
+# The default is to display definitions for NOUN, VERB, ADJ, and ADV
 partOfSpeechToAnnotate:
 - NOUN
 - VERB
@@ -32,20 +35,19 @@ partOfSpeechToAnnotate:
 # otherwise set to false(default) to display only the lemma that appears in the caption
 displayOtherLemma: false
 
-# Ignore words if their frequency is one of the list.
-# => When the information is available in the dictionary, each word is tagged with a "frequency" rank
-# Frequency goes from 1(very frequent) to 12(rare)
-# The list below is a list of frequency rank to ignore when extracting definitions
-# This is usually used to hide the definitions of very frequent words when you expect to know them already
-# NOTE: frequency information while helpfull is often missing and not always reliable
+# Ignore words if they have a specific tag in the dictionary
+# Entries in a jiji dictionary can be tagged, for example the tags freq01 to freq12 can be
+# used to represent the frequency of the entry
+# If you expect to already understand frequent words, you can put freq01, freq02, ... in the list below
+# and the definition for those words won't be displayed
+# NOTE: be conservative because frequency information is often missing and not always reliable
+# Currently Japanese language tags are: freq01->freq12, jlpt1->jlpt5, and nfXX tags copied from JMdict
 ignoreTags:
 - freq01
 - freq02
-- freq03
 
 # Ignore words in the list below
 # You can put here the list of words that you don't want defined because you already know them
 ignoreWords:
 - あ
 - ああ
-- あい
