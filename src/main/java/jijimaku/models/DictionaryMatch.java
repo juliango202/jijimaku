@@ -48,14 +48,14 @@ public class DictionaryMatch {
   }
 
   /**
-   * Return the smallest frequency among the dictionary entries.
-   * This gives the best results to represent the frequency of a match with several entries.
+   * For now a dictionary matches that contains several entries is assigned
+   * all the tags of all the entries.
+   * This gives the best results when the user want to ignore some tags.
    */
-  public Integer getFrequency() {
-    OptionalInt minFrequency = dictionaryEntries.stream()
-        .filter(de -> de.getFrequency() != null)
-        .mapToInt(JijiDictionaryEntry::getFrequency)
-        .min();
-    return minFrequency.isPresent() ? minFrequency.getAsInt() : null;
+  public List<String> getTags() {
+    return dictionaryEntries.stream()
+        .filter(de -> de.getTags() != null)
+        .flatMap(de -> de.getTags().stream())
+        .collect(Collectors.toList());
   }
 }

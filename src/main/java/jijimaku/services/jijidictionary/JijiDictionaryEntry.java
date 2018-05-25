@@ -2,23 +2,58 @@ package jijimaku.services.jijidictionary;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import jijimaku.utils.FileManager;
+
 
 /**
  * Contains one entry of a Jiji dictionary.
  */
 public class JijiDictionaryEntry {
+  private static final Logger LOGGER;
+
+  static {
+    System.setProperty("logDir", FileManager.getLogsDirectory());
+    LOGGER = LogManager.getLogger();
+  }
+
+  private static final String FREQUENCY_TAG_PREFIX = "freq";
+
   private final List<String> lemmas;
   private final List<String> senses;
-  private final List<String> pronounciation;
+  private final List<String> pronunciations;
+  private final List<String> tags;
   private final Integer frequency;
 
-  public JijiDictionaryEntry(List<String> lemmas, Integer frequency, List<String> senses, List<String> pronounciation) {
+  public JijiDictionaryEntry(List<String> lemmas, List<String> senses, List<String> pronunciations, List<String> tags) {
     Objects.requireNonNull(lemmas, "lemmas should not be null");
     Objects.requireNonNull(senses, "senses should not be null");
     this.lemmas = lemmas;
-    this.frequency = frequency;
     this.senses = senses;
-    this.pronounciation = pronounciation;
+    this.pronunciations = pronunciations;
+    this.tags = tags;
+    this.frequency = getFrequencyFromTags(tags);
+  }
+
+  private Integer getFrequencyFromTags(List<String> tags) {
+    if (tags == null) {
+      return null;
+    }
+    List<String> frequencyTags = this.tags.stream()
+        .filter(t -> t.startsWith(FREQUENCY_TAG_PREFIX)).collect(Collectors.toList());
+    if (frequencyTags.isEmpty()) {
+      return null;
+    }
+    if (frequencyTags.size() > 1) {
+      LOGGER.error("JijiDictionaryEntry {} has multiple frequency tags.", String.join(", ", lemmas));
+      return null;
+    }
+    String frequencyStr = frequencyTags.get(0).substring(FREQUENCY_TAG_PREFIX.length());
+    return Integer.parseInt(frequencyStr);
   }
 
   public List<String> getLemmas() {
@@ -29,8 +64,12 @@ public class JijiDictionaryEntry {
     return senses;
   }
 
-  public List<String> getPronounciation() {
-    return pronounciation;
+  public List<String> getPronunciations() {
+    return pronunciations;
+  }
+
+  public List<String> getTags() {
+    return tags;
   }
 
   public Integer getFrequency() {
@@ -54,18 +93,18 @@ public class JijiDictionaryEntry {
     if (!senses.equals(otherEntry.senses)) {
       return false;
     }
-    if (pronounciation != null ? !pronounciation.equals(otherEntry.pronounciation) : otherEntry.pronounciation != null) {
+    if (pronunciations != null ? !pronunciations.equals(otherEntry.pronunciations) : otherEntry.pronunciations != null) {
       return false;
     }
-    return frequency != null ? frequency.equals(otherEntry.frequency) : otherEntry.frequency == null;
+    return tags != null ? tags.equals(otherEntry.tags) : otherEntry.tags == null;
   }
 
   @Override
   public int hashCode() {
     int result = lemmas.hashCode();
     result = 31 * result + senses.hashCode();
-    result = 31 * result + (pronounciation != null ? pronounciation.hashCode() : 0);
-    result = 31 * result + (frequency != null ? frequency.hashCode() : 0);
+    result = 31 * result + (pronunciations != null ? pronunciations.hashCode() : 0);
+    result = 31 * result + (tags != null ? tags.hashCode() : 0);
     return result;
   }
 }

@@ -15,23 +15,10 @@ import org.yaml.snakeyaml.Yaml;
 import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.utils.FileManager;
 
-//private Trie atrie;
-//atrie = atrieBuilder.build();
-//final Trie.TrieBuilder atrieBuilder = Trie.builder().removeOverlaps();
-//public String getParse(String text) {
-//    Collection<Token> tokens = atrie.tokenize(text);
-//    String res = "";
-//    for (Token token : tokens) {
-//    if (token.isMatch()) {
-//    res += token.getFragment() + "|";
-//    } else {
-//    res += "*|";
-//    }
-//    }
-//    return res;
-//    }
 
-// Simple XML SAX parser to load JMDict xml data into a java Hashmap
+/**
+ * Simple YAML parsing to load jiji dictionary data into a java Hashmap.
+ */
 @SuppressWarnings("checkstyle")
 public class JijiDictionary {
   private static final Logger LOGGER;
@@ -51,9 +38,10 @@ public class JijiDictionary {
   private static final String SENSE_KEY = "sense";
   private static final String SENSES_KEY = "senses";
   private static final String PRONUNCIATION_KEY = "pronunciation";
-  private static final String FREQUENCY_KEY = "frequency";
+  private static final String TAGS_KEY = "tags";
   private static final String LEMMAS_SPLIT_RE = "\\s*,\\s*";
-  private static final String PRONUNCIATION_SPLIT_RE = "\\s*,\\s*";
+  private static final String PRONUNCIATIONS_SPLIT_RE = "\\s*,\\s*";
+  private static final String TAGS_SPLIT_RE = "\\s*,\\s*";
 
   private Map<String, List<JijiDictionaryEntry>> entriesByLemma = new HashMap<>();
   private Map<String, List<JijiDictionaryEntry>> entriesByPronunciation = new HashMap<>();
@@ -90,7 +78,6 @@ public class JijiDictionary {
 
         // Parse senses
         List<String> senses = new ArrayList<>();
-        List<String> pronunciations = null;
         if (entryMap.containsKey(SENSE_KEY)) {
           senses.add((String)entryMap.get(SENSE_KEY));
         } else if (entryMap.containsKey(SENSES_KEY)) {
@@ -100,19 +87,21 @@ public class JijiDictionary {
           return;
         }
 
+        List<String> pronunciations = null;
         if (entryMap.containsKey(PRONUNCIATION_KEY)) {
           String pronunciationStr = ((String)entryMap.get(PRONUNCIATION_KEY));
-          pronunciations = Arrays.asList(pronunciationStr.split(PRONUNCIATION_SPLIT_RE));
+          pronunciations = Arrays.asList(pronunciationStr.split(PRONUNCIATIONS_SPLIT_RE));
         }
 
-        // Parse frequency
-        Integer frequency = entryMap.containsKey(FREQUENCY_KEY)
-            ? (Integer)entryMap.get(FREQUENCY_KEY)
-            : null;
+        List<String> tags = null;
+        if (entryMap.containsKey(TAGS_KEY)) {
+          String pronunciationStr = ((String)entryMap.get(TAGS_KEY));
+          tags = Arrays.asList(pronunciationStr.split(TAGS_SPLIT_RE));
+        }
 
         // Create Jiji dictionary entry
         List<String> lemmas = Arrays.asList(key.split(LEMMAS_SPLIT_RE));
-        JijiDictionaryEntry jijiEntry = new JijiDictionaryEntry(lemmas, frequency, senses, pronunciations);
+        JijiDictionaryEntry jijiEntry = new JijiDictionaryEntry(lemmas, senses, pronunciations, tags);
 
         // Index entries by lemma
         for (String lemma : lemmas) {
@@ -124,11 +113,11 @@ public class JijiDictionary {
 
         // Index entries by pronunciation
         if (pronunciations != null) {
-          for (String pronunciation : pronunciations) {
-            if (!entriesByPronunciation.containsKey(pronunciation)) {
-              entriesByPronunciation.put(pronunciation, new ArrayList<>());
+          for (String p : pronunciations) {
+            if (!entriesByPronunciation.containsKey(p)) {
+              entriesByPronunciation.put(p, new ArrayList<>());
             }
-            entriesByPronunciation.get(pronunciation).add(jijiEntry);
+            entriesByPronunciation.get(p).add(jijiEntry);
           }
         }
       });
@@ -151,7 +140,7 @@ public class JijiDictionary {
   }
 
   /**
-   * Search an entry by pronounciation.
+   * Search an entry by pronunciation.
    */
   public List<JijiDictionaryEntry> searchByPronunciation(String p) {
     if (entriesByPronunciation.containsKey(p)) {

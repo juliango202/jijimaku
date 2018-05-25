@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -190,6 +191,7 @@ public class AnnotationService {
 
       // Ignore user words list
       if (containsMatchedLemma(ignoreWordsList, dm)) {
+        LOGGER.debug("{} ignored because it is present in ignoreWords config", dm.getTextForm());
         return false;
       }
 
@@ -198,8 +200,12 @@ public class AnnotationService {
         return false;
       }
 
-      // Filter using ignoreFrequency option
-      if (config.getIgnoreFrequencies().contains(dm.getFrequency())) {
+      // Filter using ignoreTags option
+      Optional<String> tagMatch = dm.getTags().stream()
+          .filter(t -> config.getIgnoreTags().contains(t))
+          .findFirst();
+      if (tagMatch.isPresent()) {
+        LOGGER.debug("{} ignored because tag {} is present in ignoreTags config", dm.getTextForm(), tagMatch.get());
         return false;
       }
 
@@ -233,12 +239,12 @@ public class AnnotationService {
       }
 
       String pronounciationStr = "";
-      if (def.getPronounciation() != null) {
-        // Do not display pronounciation information if it is already present in lemmas
-        boolean inLemma = def.getPronounciation().stream().anyMatch(lemmas::contains);
+      if (def.getPronunciations() != null) {
+        // Do not display pronunciation information if it is already present in lemmas
+        boolean inLemma = def.getPronunciations().stream().anyMatch(lemmas::contains);
         if (!inLemma) {
-          pronounciationStr = " [" + String.join(", ", def.getPronounciation()) + "] ";
-          // If text word is not in lemma, the match must come from pronounciation => colorize
+          pronounciationStr = " [" + String.join(", ", def.getPronunciations()) + "] ";
+          // If text word is not in lemma, the match must come from pronunciation => colorize
           if (!containsMatchedLemma(lemmas, match)) {
             pronounciationStr = SubtitleFile.addStyleToText(pronounciationStr, SubtitleFile.TextStyle.COLOR, color);
           }

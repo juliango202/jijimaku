@@ -1,7 +1,7 @@
 # Name of the dictionary file used to source words definitions
 # The dictionary file must follow the JIJI format => https://github.com/juliango202/jiji
 #dictionary: jiji.freedict.spa-eng2.yaml
-dictionary: jiji.jmdict.yaml
+dictionary: ../jiji/dictionaries/japanese/jmdict_english.jiji.yaml
 
 
 # Font-size to use when writing dictionary definitions
@@ -18,7 +18,7 @@ highlightColors:
 - '#AAFFFF'
 
 # The list of PartOfSpeech to annotate
-# The subtitle words with a detected PartOfSpeech not in this list will be ignored
+# The subtitle words with a detected PartOfSpeech NOT in this list will be ignored
 # See http://universaldependencies.org/u/pos/all.html for the possible values
 partOfSpeechToAnnotate:
 - NOUN
@@ -38,10 +38,10 @@ displayOtherLemma: false
 # The list below is a list of frequency rank to ignore when extracting definitions
 # This is usually used to hide the definitions of very frequent words when you expect to know them already
 # NOTE: frequency information while helpfull is often missing and not always reliable
-ignoreFrequencies:
-- 1
-- 2
-- 3
+ignoreTags:
+- freq01
+- freq02
+- freq03
 
 # Ignore words in the list below
 # You can put here the list of words that you don't want defined because you already know them

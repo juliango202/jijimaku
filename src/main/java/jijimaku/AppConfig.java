@@ -46,6 +46,8 @@ public class AppConfig {
       "#FFFFFF"
   );
 
+  private static final String STOPWORD_TAG = "stopword";
+
   // Yaml properties
   private final String configFilePath;
   private final Map<String, Object> configMap;
@@ -54,11 +56,11 @@ public class AppConfig {
   private final String dictionary;
   private final Integer definitionSize;
   private final Boolean displayOtherLemma;
-  private final List<Integer> ignoreFrequencies;
+  private final List<String> ignoreTags;
   private final List<String> ignoreWords;
 
   private final EnumSet<PosTag> partOfSpeechToAnnotate;
-  private List<String> highlightColors;
+  private final List<String> highlightColors;
 
   private final String assStyles;
   private final Map<String, String> properNouns;
@@ -86,7 +88,10 @@ public class AppConfig {
     displayOtherLemma = getConfigValue("displayOtherLemma", Boolean.class);
 
     ignoreWords = getConfigList("ignoreWords", String.class);
-    ignoreFrequencies = getConfigList("ignoreFrequencies", Integer.class);
+    ignoreTags = getConfigList("ignoreTags", String.class);
+
+    // By default ignore all stop words
+    ignoreTags.add(STOPWORD_TAG);
 
     // Validate partOfSpeechToAnnotate config
     List<String> posListStr = getConfigList("partOfSpeechToAnnotate", String.class);
@@ -100,17 +105,16 @@ public class AppConfig {
     }
 
     // Validate highlightColors config
-    highlightColors = getConfigList("highlightColors", String.class);
-    highlightColors = highlightColors.stream().filter(c -> {
+    List<String> configColors = getConfigList("highlightColors", String.class).stream().filter(c -> {
       if (!IS_HTML_COLOR.matcher(c).matches()) {
         LOGGER.warn("config.yaml contains an invalid color(expected format is #FFFFFF): " + c);
         return false;
       }
       return true;
     }).collect(toList());
-    if (highlightColors.isEmpty()) {
-      highlightColors = DEFAULT_HIGHLIGHT_COLORS;
-    }
+    this.highlightColors = configColors.isEmpty()
+        ? DEFAULT_HIGHLIGHT_COLORS
+        : configColors;
 
     // Validate assStyles config
     String defaultStyles = String.format(DEFAULT_ASS_STYLES, getDefinitionSize());
@@ -180,7 +184,6 @@ public class AppConfig {
     return dictionary;
   }
 
-
   /**
    * Font-size to use when writing dictionary definitions.
    */
@@ -205,8 +208,8 @@ public class AppConfig {
   /**
    * Ignore words if their frequency is one of the list.
    */
-  public List<Integer> getIgnoreFrequencies() {
-    return ignoreFrequencies;
+  public List<String> getIgnoreTags() {
+    return ignoreTags;
   }
 
   /**

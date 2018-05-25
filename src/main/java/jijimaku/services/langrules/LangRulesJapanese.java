@@ -71,10 +71,10 @@ public class LangRulesJapanese implements LangRules {
   @Override
   public boolean isIgnoredMatch(DictionaryMatch match) {
 
-    // For now ignore all-kana matches except if there is a verb
-    // TODO: This is not ideal for beginners so it should be an option in config.yaml
+    // For now ignore all-kana matches of successive tokens except if there is a verb
     if ((IS_HIRAGANA_RE.matcher(match.getTextForm()).matches() || IS_KATAKANA_RE.matcher(match.getTextForm()).matches())
-        && !match.hasVerb()) {
+        && !match.hasVerb() && match.getTokens().size() > 1) {
+      LOGGER.debug("{} ignored because several successive kana tokens are likely to be a wrong match", match.getTextForm());
       return true;
     }
 
