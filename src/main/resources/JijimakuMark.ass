@@ -8,9 +8,9 @@ WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Definition,Arial,9,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,7,0,0,0,0
-Style: Default,Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,0,0,0,0
+Style: DEFINITION,Arial,9,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,7,0,0,0,0
+Style: DEFAULT,Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,0,0,0,0
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,00:00:00.01,00:00:04.00,Definition,,0000,0000,0000,,★ TO REPLACE
+Dialogue: 0,00:00:00.01,00:00:04.00,DEFINITION,,0000,0000,0000,,★ TO REPLACE

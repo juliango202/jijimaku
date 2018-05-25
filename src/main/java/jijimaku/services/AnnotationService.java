@@ -65,12 +65,10 @@ public class AnnotationService {
       Class cls = Class.forName("jijimaku.services.langrules.LangRules" + language);
       langRules = (LangRules) cls.newInstance();
       LOGGER.debug("Using " + language + " specific annotation rules");
-    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException exc) {
-      if (exc instanceof ClassNotFoundException) {
-        LOGGER.debug("No specific annotation rules found for language " + language);
-      } else {
-        LOGGER.error("Could not instantiate LangRules class for language " + language);
-      }
+    } catch (ClassNotFoundException exc) {
+      LOGGER.debug("No specific annotation rules found for language " + language);
+    } catch (IllegalAccessException | InstantiationException exc) {
+      LOGGER.error("Could not instantiate LangRules class for language " + language);
     }
   }
 
@@ -159,7 +157,7 @@ public class AnnotationService {
       // Start with all tokens and remove one by one until we have a match
       List<TextToken> maximumTokens = new ArrayList<>(captionTokens);
       DictionaryMatch match = dictionaryMatch(maximumTokens);
-      while (match == null && maximumTokens.size() > 0) {
+      while (match == null && !maximumTokens.isEmpty()) {
         maximumTokens = maximumTokens.subList(0, maximumTokens.size() - 1);
         match = dictionaryMatch(maximumTokens);
       }
@@ -185,7 +183,7 @@ public class AnnotationService {
     return allMatches.stream().filter(dm -> {
 
       // Ignore matches that don't have any partOfSpeech to annotate
-      if (!dm.getTokens().stream().anyMatch(t -> partOfSpeechToAnnotate.contains(t.getPartOfSpeech()))) {
+      if (dm.getTokens().stream().noneMatch(t -> partOfSpeechToAnnotate.contains(t.getPartOfSpeech()))) {
         return false;
       }
 

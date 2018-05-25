@@ -39,8 +39,8 @@ public class AppConfig {
   private static final String DEFAULT_ASS_STYLES = "[V4+ Styles]\n"
       + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut"
       + ", ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-      + "Style: " + SubtitleFile.SubStyle.Definition + ",Arial,%d,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
-      + "Style: " + SubtitleFile.SubStyle.Default + ",Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
+      + "Style: " + SubtitleFile.SubStyle.DEFINITION + ",Arial,%d,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,1,1,7,3,0,2,0\n"
+      + "Style: " + SubtitleFile.SubStyle.DEFAULT + ",Arial,28,16777215,16777215,0,2147483648,0,0,0,0,100,100,0,0,1,2,2,2,20,20,15,0";
 
   private static final List<String> DEFAULT_HIGHLIGHT_COLORS = Collections.singletonList(
       "#FFFFFF"

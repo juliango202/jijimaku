@@ -108,12 +108,12 @@ public class LangParserUdpipe implements LangParser {
       throw new UnexpectedCriticalError();
     }
 
-    Model model = Model.load(modelFile);
-    if (model == null) {
+    Model udpipeModel = Model.load(modelFile);
+    if (udpipeModel == null) {
       LOGGER.error("Cannot load parser model from file '{}'", modelFile);
       throw new UnexpectedCriticalError();
     }
-    return model;
+    return udpipeModel;
   }
 
   /**

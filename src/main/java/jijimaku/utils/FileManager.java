@@ -30,6 +30,11 @@ public class FileManager {
     LOGGER = LogManager.getLogger();
   }
 
+  // Add a private constructor to hide the implicit public one
+  private FileManager() {
+    throw new IllegalStateException("Utility class should not be instanciated");
+  }
+
   /**
    * Return the directory from which the application is run.
    * In case of a compiled JAR this is not the current directory unfortunately

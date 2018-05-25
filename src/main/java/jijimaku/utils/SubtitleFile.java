@@ -44,8 +44,8 @@ public class SubtitleFile {
   private static final String JIJIMAKU_SIGNATURE = "ANNOTATED-BY-JIJIMAKU";
 
   public enum SubStyle {
-    Definition,
-    Default
+    DEFINITION,
+    DEFAULT
   }
 
   private final TimedTextObject timedText;
@@ -84,7 +84,7 @@ public class SubtitleFile {
 
     if (timedText.warnings.length() > "List of non fatal errors produced during parsing:\n\n".length()) {
       LOGGER.warn("There was some warnings during parsing. See logs.");
-      LOGGER.debug("Got warnings: {}", "\n" + timedText.warnings);
+      LOGGER.debug("Got warnings: %n{}", timedText.warnings);
     }
 
     styles = parseStyles(stylesStr);
@@ -92,8 +92,8 @@ public class SubtitleFile {
     timedText.description = JIJIMAKU_SIGNATURE;
     annotationCaptions = new TreeMap<>();
 
-    // Initialization: set style to Default
-    timedText.captions.values().stream().forEach(c -> c.style = styles.get("Default"));
+    // Initialization: set style to DEFAULT
+    timedText.captions.values().stream().forEach(c -> c.style = styles.get("DEFAULT"));
 
     captionIter = timedText.captions.entrySet().iterator();
   }
@@ -204,7 +204,7 @@ public class SubtitleFile {
     annotation.content = String.join("\\N", annotations);
     annotation.start = currentCaption.getValue().start;
     annotation.end = currentCaption.getValue().end;
-    annotation.style = styles.get(SubStyle.Definition.toString());
+    annotation.style = styles.get(SubStyle.DEFINITION.toString());
     annotationCaptions.put(time, annotation);
     nbCaptionAnnotated++;
   }
