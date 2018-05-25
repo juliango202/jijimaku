@@ -187,12 +187,6 @@ public class AnnotationService {
         return false;
       }
 
-      // Ignore user words list
-      if (containsMatchedLemma(ignoreWordsList, dm)) {
-        LOGGER.debug("{} ignored because it is present in ignoreWords config", dm.getTextForm());
-        return false;
-      }
-
       // Filter using language-specific rules
       if (langRules != null && langRules.isIgnoredMatch(dm)) {
         return false;
@@ -204,6 +198,12 @@ public class AnnotationService {
           .findFirst();
       if (tagMatch.isPresent()) {
         LOGGER.debug("{} ignored because tag {} is present in ignoreTags config", dm.getTextForm(), tagMatch.get());
+        return false;
+      }
+
+      // Ignore user words list
+      if (containsMatchedLemma(ignoreWordsList, dm)) {
+        LOGGER.debug("{} ignored because it is present in ignoreWords config", dm.getTextForm());
         return false;
       }
 
@@ -286,7 +286,11 @@ public class AnnotationService {
       List<String> alreadyDefinedWords = new ArrayList<>();
       List<String> annotations = new ArrayList<>();
       List<DictionaryMatch> filteredMatches = getFilteredMatches(currentCaptionText);
-      LOGGER.debug("dictionary matches: " + filteredMatches.stream().map(DictionaryMatch::getTextForm).collect(Collectors.joining(", ")));
+      if (filteredMatches.isEmpty()) {
+        LOGGER.debug("No dictionary match.");
+      } else {
+        LOGGER.debug("dictionary matches: " + filteredMatches.stream().map(DictionaryMatch::getTextForm).collect(Collectors.joining(", ")));
+      }
 
       for (DictionaryMatch match : filteredMatches) {
         String color = colors.iterator().next();
