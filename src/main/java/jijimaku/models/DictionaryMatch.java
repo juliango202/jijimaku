@@ -1,7 +1,6 @@
 package jijimaku.models;
 
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 import jijimaku.services.jijidictionary.JijiDictionaryEntry;

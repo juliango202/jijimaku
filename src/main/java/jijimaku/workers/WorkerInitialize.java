@@ -41,7 +41,7 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
   @Override
   public ServicesParam doInBackground() throws Exception {
     if (SwingUtilities.isEventDispatchThread()) {
-      throw new Exception("Worker should not run on the EDT thread!");
+      throw new RuntimeException("Worker should not run on the EDT thread!");
     }
 
     LOGGER.info("-------------------------- Initialization --------------------------");
