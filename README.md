@@ -1,4 +1,4 @@
-Jijimaku is a Java application for inserting dictionary definition inside video subtitle files(*.srt, *.ass). It can be used to improve one's language skill when watching videos in a foreign language.
+Jijimaku is a Java application for inserting dictionary definitions inside video subtitle files(*.srt, *.ass). It's a tool for people who want to improve their foreign language skill by watching videos.
 
 **Currently in beta, only Japanese subtitles are supported.**
 
