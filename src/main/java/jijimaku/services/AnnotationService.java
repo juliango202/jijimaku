@@ -23,6 +23,7 @@ import jijimaku.services.langrules.LangRules;
 import jijimaku.utils.FileManager;
 import jijimaku.utils.SubtitleFile;
 
+import subtitleFile.Caption;
 import subtitleFile.FatalParsingException;
 
 /**
@@ -62,7 +63,8 @@ public class AnnotationService {
     langRules = null;
     String language = langParser.getLanguage().toString();
     try {
-      Class cls = Class.forName("jijimaku.services.langrules.LangRules" + language);
+      Class cls = Class.forName("jijimaku.services.langrules.LangRules"
+          + language.substring(0, 1).toUpperCase() + language.substring(1).toLowerCase());
       langRules = (LangRules) cls.newInstance();
       LOGGER.debug("Using " + language + " specific annotation rules");
     } catch (ClassNotFoundException exc) {
@@ -104,15 +106,16 @@ public class AnnotationService {
     }
     String ws = langParser.getWordSeparator();
 
-    String firstCanonicalForm = tokens.stream().map(TextToken::getFirstCanonicalForm).collect(Collectors.joining(ws));
-    List<JijiDictionaryEntry> entries = dict.search(firstCanonicalForm);
+    // Search the actual text form first
+    String textForm = tokens.stream().map(tt -> tt.getTextForm().toLowerCase()).collect(Collectors.joining(ws));
+    List<JijiDictionaryEntry> entries = dict.search(textForm);
     if (!entries.isEmpty()) {
       return new DictionaryMatch(tokens, entries, ws);
     }
 
-    // If there is no entry for the canonical form, search the exact text
-    String textForm = tokens.stream().map(tt -> tt.getTextForm().toLowerCase()).collect(Collectors.joining(ws));
-    entries = dict.search(textForm);
+    // If there is no entry for the text form, search the first canonical form
+    String firstCanonicalForm = tokens.stream().map(TextToken::getFirstCanonicalForm).collect(Collectors.joining(ws));
+    entries = dict.search(firstCanonicalForm);
     if (!entries.isEmpty()) {
       return new DictionaryMatch(tokens, entries, ws);
     }
@@ -188,7 +191,7 @@ public class AnnotationService {
       }
 
       // Filter using language-specific rules
-      if (langRules != null && langRules.isIgnoredMatch(dm)) {
+      if (langRules != null && langRules.isIgnoredMatch(dm, config.getIgnoreTags())) {
         return false;
       }
 
@@ -279,7 +282,9 @@ public class AnnotationService {
 
     // Loop through the subtitle file captions one by one
     while (subtitle.hasNext()) {
-      String currentCaptionText = cleanCaptionText(subtitle.nextCaption());
+      Caption caption = subtitle.nextCaption();
+      LOGGER.debug("{} -> {}", caption.start, caption.end);
+      String currentCaptionText = cleanCaptionText(caption.content);
       List<String> colors = new ArrayList<>(config.getHighlightColors());
 
       // Parse subtitle and lookup definitions

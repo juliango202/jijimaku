@@ -23,5 +23,5 @@ public interface LangRules {
   /**
    * Return true if a DictionaryMatch should be ignored for this language.
    */
-  boolean isIgnoredMatch(DictionaryMatch match);
+  boolean isIgnoredMatch(DictionaryMatch match, List<String> ignoreTags);
 }

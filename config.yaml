@@ -7,17 +7,16 @@ dictionary: jmdict_english.jiji.yaml
 definitionSize: 9
 
 # List of colors to use successively to highlight the defined words in a subtitle caption.
-# For beginners it helps to highlight words in different colors to make parsing easier
-# and to find the correponding definition more quickly. In that case use you can use:
-#- '#FFAAAA'
-#- '#AAAAFF'
-#- '#AAFFAA'
-#- '#FFAAFF'
-#- '#AAFFFF'
-# For more advanced users it's probably better to not highlight words and use
-# only white text(this is the default)
+# For challenging subtitles with a lot of unknown words, it helps to highlight words
+# in different colors to make parsing easier and to read definitions quickly.
+# For "easy" subtitles with relatively few unknown words it's probably better to
+# use only white(#FFFFFF) so you can practice parsing naturally.
 highlightColors:
-- '#FFFFFF'
+- '#FFAAAA'
+- '#AAAAFF'
+- '#AAFFAA'
+- '#FFAAFF'
+- '#AAFFFF'
 
 # The list of PartOfSpeech to annotate
 # The subtitle words with a detected PartOfSpeech NOT in this list will be ignored
@@ -45,6 +44,7 @@ displayOtherLemma: false
 ignoreTags:
 - freq01
 - freq02
+- kana-expr
 
 # Ignore words in the list below
 # You can put here the list of words that you don't want defined because you already know them

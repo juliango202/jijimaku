@@ -28,6 +28,8 @@ public class LangRulesJapanese implements LangRules {
       "て", "で", "ちゃ"
   );
 
+  private static final String KANA_EXPRESSION_TAG = "kana-expr";
+
   /**
    * Filtering pass to merge some SCONJ with the previous VERBS/AUX in Japanese.
    * This is so that for example 見つけ-て appears as one word in the subtitles
@@ -54,14 +56,20 @@ public class LangRulesJapanese implements LangRules {
   private static final Pattern IS_HIRAGANA_RE = Pattern.compile("^[\\p{InHiragana}\\u30FC]+$");
   private static final Pattern IS_KATAKANA_RE = Pattern.compile("^[\\p{InKatakana}\\u30FC]+$");
 
+  /**
+   * Return whether or not the match is a kana expression.
+   * A kana expression is a set of several non-verb tokens containing only hiragana
+   */
+  private boolean isKanaExpression(DictionaryMatch match) {
+    return IS_HIRAGANA_RE.matcher(match.getTextForm()).matches() && !match.hasVerb() && match.getTokens().size() > 1;
+  }
+
   @Override
   public boolean isValidMatch(DictionaryMatch match) {
-
-    // Do not accept the match if it is a short sequence of hiragana
-    // because it is most likely a wrong grouping of independent grammar conjunctions
-    // and unlikely to be an unusual word that needs to be defined
-    // (but make an exception for verbs)
-    if (match.getTextForm().length() <= 3 && IS_HIRAGANA_RE.matcher(match.getTextForm()).matches() && !match.hasVerb()) {
+    // Do not accept short kana expressions(3 characters or less)
+    // because there is a high chance it is a wrong grouping of independent grammar conjunctions
+    // and in any case it is more likely grammar, not vocabulary
+    if (isKanaExpression(match)  && match.getTextForm().length() <= 3) {
       return false;
     }
 
@@ -69,12 +77,10 @@ public class LangRulesJapanese implements LangRules {
   }
 
   @Override
-  public boolean isIgnoredMatch(DictionaryMatch match) {
-
-    // For now ignore all-kana matches of successive tokens except if there is a verb
-    if ((IS_HIRAGANA_RE.matcher(match.getTextForm()).matches() || IS_KATAKANA_RE.matcher(match.getTextForm()).matches())
-        && !match.hasVerb() && match.getTokens().size() > 1) {
-      LOGGER.debug("{} ignored because several successive kana tokens are likely to be a wrong match", match.getTextForm());
+  public boolean isIgnoredMatch(DictionaryMatch match, List<String> ignoreTags) {
+    // Ignore kana expressions if the KANA_EXPRESSION_TAG is set in ignoreTags
+    if (isKanaExpression(match) && ignoreTags.contains(KANA_EXPRESSION_TAG)) {
+      LOGGER.debug("{} ignored because it is a kana expression", match.getTextForm());
       return true;
     }
 

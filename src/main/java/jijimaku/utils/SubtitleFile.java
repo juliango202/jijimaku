@@ -123,9 +123,9 @@ public class SubtitleFile {
     return captionIter.hasNext();
   }
 
-  public String nextCaption() {
+  public Caption nextCaption() {
     currentCaption = captionIter.next();
-    return currentCaption.getValue().content;
+    return currentCaption.getValue();
   }
 
   private String findWordRegexp(String expression, String wordSeparator) {
