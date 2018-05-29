@@ -40,7 +40,8 @@ displayOtherLemma: false
 # If you expect to already understand frequent words, you can put freq01, freq02, ... in the list below
 # and the definition for those words won't be displayed
 # NOTE: be conservative because frequency information is often missing and not always reliable
-# Currently Japanese language tags are: freq01->freq12, jlpt1->jlpt5, and nfXX tags copied from JMdict
+# Currently Japanese language tags are: kana-expr, freq01->freq12, jlpt1->jlpt5, and nfXX tags copied from JMdict
+# kana-expr is for expressions made of successive hiragana tokens, they are usually grammar constructs that can be ignored.
 ignoreTags:
 - freq01
 - freq02
