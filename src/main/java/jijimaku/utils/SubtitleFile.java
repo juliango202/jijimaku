@@ -182,7 +182,7 @@ public class SubtitleFile {
     try {
       TimedTextObject tto = ttff.parseFile("", getClass().getClassLoader().getResourceAsStream("JijimakuMark.ass"));
       Caption jijimakuMark = tto.captions.values().iterator().next();
-      jijimakuMark.content = "★ Definitions by {\\c&AAAAFF&}{\\b1}JIJIMAKU{\\r} using {\\c&FFAAAA&}" + dictionaryTitle + "{\\r}";
+      jijimakuMark.content = "★ Definitions by {\\c&AAAAFF&}{\\b1}Jijimaku{\\r} using {\\c&FFAAAA&}" + dictionaryTitle + "{\\r}";
       annotationCaptions.put(0, jijimakuMark);
     } catch (IOException exc) {
       LOGGER.error("Cannot read JijimakuMark.ass.", exc);

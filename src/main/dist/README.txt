@@ -1,7 +1,7 @@
 Jjijimaku
 ============
 This program reads subtitle files in the chosen directory tree and add the dictionary definitions for the words encountered.
-Multiple languages are supported but you need to download a specific model file and dictionary file for each language you want to process.
+Multiple languages are supported but you need to download a specific parsing model file and dictionary file for each language you want to process.
 See the project website for more information https://github.com/juliango202
 
 Usage
