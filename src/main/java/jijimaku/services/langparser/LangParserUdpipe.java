@@ -52,7 +52,7 @@ public class LangParserUdpipe implements LangParser {
       LOGGER.error("Error while trying to load udpipe native library " + udpipeNativeLibPath);
       throw new UnexpectedCriticalError();
     }
-    language = getLanguageFromStr(languageStr.replace(" ", "_"));
+    language = getLanguageFromStr(languageStr);
     model = getUdpipeModel();
     tokenizer = model.newTokenizer(Model.getDEFAULT());
     LOGGER.debug("Parsing using UDPipe for language " + language.toString());

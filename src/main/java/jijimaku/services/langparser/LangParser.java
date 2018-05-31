@@ -157,7 +157,7 @@ public interface LangParser {
 
   default Language getLanguageFromStr(String languageStr) {
     try {
-      return Language.valueOf(languageStr);
+      return Language.valueOf(languageStr.replace(" ", "_").toUpperCase());
     } catch (IllegalArgumentException exc) {
       getLogger().debug(exc);
       getLogger().error("Unsupported language '{}', should be one of: {}",
