@@ -5,7 +5,7 @@ Jijimaku is a Java application for inserting dictionary definitions inside video
 ![Snap 1](https://juliango202.github.io/img/jijimaku/snap1.jpg)
 
 ## Installation
-To install, get the [latest release](https://github.com/juliango202/jijimaku/releases), unzip in some directory and run the Jar file(Java 8 is required). See config.yaml for configuration options.
+Java 8 is required. To install, get the [latest release](https://github.com/juliango202/jijimaku/releases), unzip in some directory and add a language dictionary and a language parsing model file. See the release notes for more information.
 
 ## Why Jijimaku?
 Past a certain level, there is no better way to learn a language than going full native, i.e. speaking with native speakers,
