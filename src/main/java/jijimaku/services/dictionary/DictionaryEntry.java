@@ -1,4 +1,4 @@
-package jijimaku.services.jijidictionary;
+package jijimaku.services.dictionary;
 
 import java.util.List;
 import java.util.Objects;
@@ -13,7 +13,7 @@ import jijimaku.utils.FileManager;
 /**
  * Contains one entry of a Jiji dictionary.
  */
-public class JijiDictionaryEntry {
+public class DictionaryEntry {
   private static final Logger LOGGER;
 
   static {
@@ -29,7 +29,7 @@ public class JijiDictionaryEntry {
   private final List<String> tags;
   private final Integer frequency;
 
-  public JijiDictionaryEntry(List<String> lemmas, List<String> senses, List<String> pronunciations, List<String> tags) {
+  public DictionaryEntry(List<String> lemmas, List<String> senses, List<String> pronunciations, List<String> tags) {
     Objects.requireNonNull(lemmas, "lemmas should not be null");
     Objects.requireNonNull(senses, "senses should not be null");
     this.lemmas = lemmas;
@@ -86,7 +86,7 @@ public class JijiDictionaryEntry {
       return false;
     }
 
-    JijiDictionaryEntry otherEntry = (JijiDictionaryEntry) otherObj;
+    DictionaryEntry otherEntry = (DictionaryEntry) otherObj;
     if (!lemmas.equals(otherEntry.lemmas)) {
       return false;
     }

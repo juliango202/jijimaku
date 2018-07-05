@@ -15,8 +15,8 @@ import org.apache.logging.log4j.Logger;
 import jijimaku.AppConfig;
 import jijimaku.models.DictionaryMatch;
 import jijimaku.models.ServicesParam;
-import jijimaku.services.jijidictionary.JijiDictionary;
-import jijimaku.services.jijidictionary.JijiDictionaryEntry;
+import jijimaku.services.dictionary.Dictionary;
+import jijimaku.services.dictionary.DictionaryEntry;
 import jijimaku.services.langparser.LangParser;
 import jijimaku.services.langparser.LangParser.TextToken;
 import jijimaku.services.langrules.LangRules;
@@ -47,7 +47,7 @@ public class AnnotationService {
 
   private final AppConfig config;
   private final LangParser langParser;
-  private final JijiDictionary dict;
+  private final Dictionary dict;
   private final List<String> ignoreWordsList;
   private final EnumSet<LangParser.PosTag> partOfSpeechToAnnotate;
   private LangRules langRules;
@@ -108,7 +108,7 @@ public class AnnotationService {
 
     // Search the actual text form first
     String textForm = tokens.stream().map(tt -> tt.getTextForm().toLowerCase()).collect(Collectors.joining(ws));
-    List<JijiDictionaryEntry> entries = dict.search(textForm);
+    List<DictionaryEntry> entries = dict.search(textForm);
     if (!entries.isEmpty()) {
       return new DictionaryMatch(tokens, entries, ws);
     }
@@ -217,7 +217,7 @@ public class AnnotationService {
   private List<String> annotateDictionaryMatch(DictionaryMatch match, String color) {
     Boolean displayOtherLemma = config.getDisplayOtherLemma();
     List<String> tokenDefs = new ArrayList<>();
-    for (JijiDictionaryEntry def : match.getDictionaryEntries()) {
+    for (DictionaryEntry def : match.getDictionaryEntries()) {
       // Each definition is made of several lemmas and several senses
       // Depending on "displayOtherLemma" option, display only the lemma corresponding to the subtitle word, or all lemmas
       String lemmas = def.getLemmas().stream().map(l -> {

@@ -95,7 +95,7 @@ class AppMain {
         // Propagate our exceptions to the main error handler
         throw (JijimakuError) originalExc;
       }
-      LOGGER.debug(originalExc);
+      LOGGER.debug(originalExc.getMessage(), originalExc);
       LOGGER.error("Worker thread returned an error. Check the logs.");
       throw new UnexpectedCriticalError();
     }

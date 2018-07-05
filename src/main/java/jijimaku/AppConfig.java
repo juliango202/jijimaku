@@ -54,6 +54,7 @@ public class AppConfig {
 
   // Jijimaku config values
   private final String dictionary;
+  private final String dictionaryLanguage;
   private final Integer definitionSize;
   private final Boolean displayOtherLemma;
   private final List<String> ignoreTags;
@@ -84,6 +85,7 @@ public class AppConfig {
     }
 
     dictionary = getConfigValue("dictionary", String.class);
+    dictionaryLanguage = getConfigValue("dictionaryLanguage", String.class);
     definitionSize = getConfigValue("definitionSize", Integer.class, 8);
     displayOtherLemma = getConfigValue("displayOtherLemma", Boolean.class);
 
@@ -182,6 +184,14 @@ public class AppConfig {
    */
   public String getDictionary() {
     return dictionary;
+  }
+
+  /**
+   * Source language of the dictionary.
+   * Required for LD2 dictionaries
+   */
+  public String getDictionaryLanguage() {
+    return dictionaryLanguage;
   }
 
   /**

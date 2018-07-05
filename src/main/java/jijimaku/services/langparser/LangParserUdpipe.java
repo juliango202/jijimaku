@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import jijimaku.errors.UnexpectedCriticalError;
+import jijimaku.services.LanguageService.Language;
 import jijimaku.utils.FileManager;
 
 import cz.cuni.mff.ufal.udpipe.InputFormat;
@@ -43,7 +44,7 @@ public class LangParserUdpipe implements LangParser {
   private InputFormat tokenizer;
   private Language language;
 
-  public LangParserUdpipe(String languageStr) {
+  public LangParserUdpipe(Language language) {
     String udpipeNativeLibPath = getUdPipeNativeLibPath();
     try {
       udpipe_java.setLibraryPath(udpipeNativeLibPath);
@@ -52,7 +53,7 @@ public class LangParserUdpipe implements LangParser {
       LOGGER.error("Error while trying to load udpipe native library " + udpipeNativeLibPath);
       throw new UnexpectedCriticalError();
     }
-    language = getLanguageFromStr(languageStr);
+    this.language = language;
     model = getUdpipeModel();
     tokenizer = model.newTokenizer(Model.getDEFAULT());
     LOGGER.debug("Parsing using UDPipe for language " + language.toString());

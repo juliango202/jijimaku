@@ -2,6 +2,10 @@
 # The dictionary file must follow the JIJI format => https://github.com/juliango202/jiji
 dictionary: jmdict_english.jiji.yaml
 
+# Optional: Source language of the dictionary
+# This can be used for LD2 dictionaries if language detection fails
+# dictionaryLanguage: French
+
 # Font-size to use when writing dictionary definitions
 # A low resolution video will need a higher font-size, and vice-versa
 definitionSize: 9

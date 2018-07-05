@@ -10,7 +10,10 @@ import org.apache.logging.log4j.Logger;
 import jijimaku.AppConfig;
 import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.models.ServicesParam;
-import jijimaku.services.jijidictionary.JijiDictionary;
+import jijimaku.services.LanguageService;
+import jijimaku.services.dictionary.Dictionary;
+import jijimaku.services.dictionary.DictionaryJiji;
+import jijimaku.services.dictionary.DictionaryLingoesLd2;
 import jijimaku.services.langparser.LangParser;
 import jijimaku.services.langparser.LangParserKuromoji;
 import jijimaku.services.langparser.LangParserUdpipe;
@@ -65,12 +68,18 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
       LOGGER.error("Could not find the dictionary file {} in directory {}", config.getDictionary(), appDirectory);
       throw new UnexpectedCriticalError();
     }
-    JijiDictionary dict = new JijiDictionary(dictionaryFile);
+
+    Dictionary dict;
+    if (config.getDictionary().toLowerCase().endsWith(".ld2")) {
+      dict = new DictionaryLingoesLd2(dictionaryFile, config.getDictionaryLanguage());
+    } else {
+      dict = new DictionaryJiji(dictionaryFile);
+    }
 
     // Initialize parser
     LOGGER.info("Instantiate parser...");
     LangParser langParser;
-    if (dict.getLanguageFrom().equalsIgnoreCase("Japanese")) {
+    if (dict.getLanguageFrom() == LanguageService.Language.JAPANESE) {
       langParser = new LangParserKuromoji(config);
     } else {
       langParser = new LangParserUdpipe(dict.getLanguageFrom());

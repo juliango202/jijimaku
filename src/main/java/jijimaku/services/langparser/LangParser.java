@@ -1,73 +1,20 @@
 package jijimaku.services.langparser;
 
-import java.util.Arrays;
+import static jijimaku.services.LanguageService.LANGUAGES_WITHOUT_SPACES;
+
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Logger;
 
-import jijimaku.errors.UnexpectedCriticalError;
+import jijimaku.services.LanguageService.Language;
+
 
 /**
  * Parse a sentence into grammatical words.
  * This interface can be implemented by different classes to parse different languages
  */
 public interface LangParser {
-
-  @SuppressWarnings("unused")
-  enum Language {
-    ANCIENT_GREEK,
-    ARABIC,
-    BASQUE,
-    BELARUSIAN,
-    BULGARIAN,
-    CATALAN,
-    CHINESE,
-    COPTIC,
-    CROATIAN,
-    CZECH,
-    DANISH,
-    DUTCH,
-    ENGLISH,
-    ESTONIAN,
-    FINNISH,
-    FRENCH,
-    GALICIAN,
-    GERMAN,
-    GOTHIC,
-    GREEK,
-    HEBREW,
-    HINDI,
-    HUNGARIAN,
-    INDONESIAN,
-    IRISH,
-    ITALIAN,
-    JAPANESE,
-    KAZAKH,
-    KOREAN,
-    LATIN,
-    LATVIAN,
-    LITHUANIAN,
-    NORWEGIAN,
-    OLD_CHURCH_SLAVONIC,
-    PERSIAN,
-    POLISH,
-    PORTUGUESE,
-    ROMANIAN,
-    RUSSIAN,
-    SANSKRIT,
-    SLOVAK,
-    SLOVENIAN,
-    SPANISH,
-    SWEDISH,
-    TAMIL,
-    TURKISH,
-    UKRAINIAN,
-    URDU,
-    UYGHUR,
-    VIETNAMESE
-  }
 
   // Part Of Speech universal tags
   // See http://universaldependencies.org/u/pos/all.html
@@ -149,22 +96,7 @@ public interface LangParser {
   }
 
   default String getWordSeparator() {
-    List<Language> languagesWithoutSpaces = Arrays.asList(
-        Language.JAPANESE, Language.CHINESE, Language.VIETNAMESE
-    );
-    return languagesWithoutSpaces.contains(getLanguage()) ? "" : " ";
-  }
-
-  default Language getLanguageFromStr(String languageStr) {
-    try {
-      return Language.valueOf(languageStr.replace(" ", "_").toUpperCase());
-    } catch (IllegalArgumentException exc) {
-      getLogger().debug(exc);
-      getLogger().error("Unsupported language '{}', should be one of: {}",
-          languageStr.toUpperCase(),
-          Stream.of(Language.values()).map(Enum::toString).collect(Collectors.joining(", ")));
-      throw new UnexpectedCriticalError();
-    }
+    return LANGUAGES_WITHOUT_SPACES.contains(getLanguage()) ? "" : " ";
   }
 
   // Returned the language supported by the parser

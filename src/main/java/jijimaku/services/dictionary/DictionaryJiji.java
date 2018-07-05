@@ -1,10 +1,9 @@
-package jijimaku.services.jijidictionary;
+package jijimaku.services.dictionary;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +12,8 @@ import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 import jijimaku.errors.UnexpectedCriticalError;
+import jijimaku.services.LanguageService;
+import jijimaku.services.LanguageService.Language;
 import jijimaku.utils.FileManager;
 
 
@@ -20,7 +21,7 @@ import jijimaku.utils.FileManager;
  * Simple YAML parsing to load jiji dictionary data into a java Hashmap.
  */
 @SuppressWarnings("checkstyle")
-public class JijiDictionary {
+public class DictionaryJiji implements Dictionary {
   private static final Logger LOGGER;
 
   static {
@@ -30,10 +31,8 @@ public class JijiDictionary {
 
   private static final String DICT_INFO_KEY = "_about_this_dictionary";
   private static final String DICT_TITLE_KEY = "title";
-  private static final String DICT_LICENCE_KEY = "licence";
   private static final String DICT_LANGUAGES_KEY = "languages";
   private static final String DICT_LANGUAGES_FROM_KEY = "from";
-  private static final String DICT_LANGUAGES_TO_KEY = "to";
 
   private static final String SENSE_KEY = "sense";
   private static final String SENSES_KEY = "senses";
@@ -43,25 +42,24 @@ public class JijiDictionary {
   private static final String PRONUNCIATIONS_SPLIT_RE = "\\s*,\\s*";
   private static final String TAGS_SPLIT_RE = "\\s*,\\s*";
 
-  private Map<String, List<JijiDictionaryEntry>> entriesByLemma = new HashMap<>();
-  private Map<String, List<JijiDictionaryEntry>> entriesByPronunciation = new HashMap<>();
   private String title;
-  private String licence;
-  private String languageFrom;
-  private String languageTo;
+  private Language languageFrom;
 
   @SuppressWarnings("unchecked")
   private void parseAboutThisDictionary(Object yamlObj) {
     Map<String, Object> infoMap = (Map<String, Object>) yamlObj;
     title = (String)infoMap.get(DICT_TITLE_KEY);
-    licence = (String)infoMap.get(DICT_LICENCE_KEY);
     Map<String, Object> langMap = (Map<String, Object>) infoMap.get(DICT_LANGUAGES_KEY);
-    languageFrom = (String)langMap.get(DICT_LANGUAGES_FROM_KEY);
-    languageTo = (String)langMap.get(DICT_LANGUAGES_TO_KEY);
+    String languageFromStr = (String)langMap.get(DICT_LANGUAGES_FROM_KEY);
+    languageFrom = LanguageService.getLanguageFromStr(languageFromStr);
+    if (languageFrom == null) {
+      LOGGER.error("Cannot detect language of Jiji dictionary");
+      throw new UnexpectedCriticalError();
+    }
   }
 
   @SuppressWarnings("unchecked")
-  public JijiDictionary(File jijiDictFile) {
+  public DictionaryJiji(File jijiDictFile) {
     try {
       Yaml yaml = new Yaml();
       String yamlStr = FileManager.fileAnyEncodingToString(jijiDictFile);
@@ -101,24 +99,14 @@ public class JijiDictionary {
 
         // Create Jiji dictionary entry
         List<String> lemmas = Arrays.asList(key.split(LEMMAS_SPLIT_RE));
-        JijiDictionaryEntry jijiEntry = new JijiDictionaryEntry(lemmas, senses, pronunciations, tags);
+        DictionaryEntry dictEntry = new DictionaryEntry(lemmas, senses, pronunciations, tags);
 
         // Index entries by lemma
         for (String lemma : lemmas) {
           if (!entriesByLemma.containsKey(lemma)) {
             entriesByLemma.put(lemma, new ArrayList<>());
           }
-          entriesByLemma.get(lemma).add(jijiEntry);
-        }
-
-        // Index entries by pronunciation
-        if (pronunciations != null) {
-          for (String p : pronunciations) {
-            if (!entriesByPronunciation.containsKey(p)) {
-              entriesByPronunciation.put(p, new ArrayList<>());
-            }
-            entriesByPronunciation.get(p).add(jijiEntry);
-          }
+          entriesByLemma.get(lemma).add(dictEntry);
         }
       });
     } catch (IOException exc) {
@@ -128,42 +116,12 @@ public class JijiDictionary {
     }
   }
 
-  /**
-   * Search for a lemma in the dictionary.
-   */
-  public List<JijiDictionaryEntry> search(String w) {
-    if (entriesByLemma.containsKey(w)) {
-      return entriesByLemma.get(w);
-    } else {
-      return java.util.Collections.emptyList();
-    }
-  }
-
-  /**
-   * Search an entry by pronunciation.
-   */
-  public List<JijiDictionaryEntry> searchByPronunciation(String p) {
-    if (entriesByPronunciation.containsKey(p)) {
-      return entriesByPronunciation.get(p);
-    } else {
-      return java.util.Collections.emptyList();
-    }
-  }
-
   public String getTitle() {
     return title;
   }
 
-  public String getLicence() {
-    return licence;
-  }
-
-  public String getLanguageFrom() {
+  public Language getLanguageFrom() {
     return languageFrom;
-  }
-
-  public String getLanguageTo() {
-    return languageTo;
   }
 }
 

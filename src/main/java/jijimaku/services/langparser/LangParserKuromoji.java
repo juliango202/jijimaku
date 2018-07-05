@@ -10,11 +10,13 @@ import java.util.stream.IntStream;
 
 import com.atilika.kuromoji.unidic.Token;
 import com.atilika.kuromoji.unidic.Tokenizer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import jijimaku.AppConfig;
 import jijimaku.errors.UnexpectedCriticalError;
+import jijimaku.services.LanguageService.Language;
 import jijimaku.utils.FileManager;
 
 /**

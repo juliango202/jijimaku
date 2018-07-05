@@ -1,7 +1,7 @@
 package jijimaku.models;
 
 import jijimaku.AppConfig;
-import jijimaku.services.jijidictionary.JijiDictionary;
+import jijimaku.services.dictionary.Dictionary;
 import jijimaku.services.langparser.LangParser;
 
 /**
@@ -10,10 +10,10 @@ import jijimaku.services.langparser.LangParser;
 public class ServicesParam {
 
   private final AppConfig config;
-  private final JijiDictionary dictionary;
+  private final Dictionary dictionary;
   private final LangParser parser;
 
-  public ServicesParam(AppConfig config, JijiDictionary dictionary, LangParser parser) {
+  public ServicesParam(AppConfig config, Dictionary dictionary, LangParser parser) {
     this.dictionary = dictionary;
     this.parser = parser;
     this.config = config;
@@ -23,7 +23,7 @@ public class ServicesParam {
     return config;
   }
 
-  public JijiDictionary getDictionary() {
+  public Dictionary getDictionary() {
     return dictionary;
   }
 
