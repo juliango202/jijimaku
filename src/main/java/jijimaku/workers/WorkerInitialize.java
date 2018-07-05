@@ -71,9 +71,9 @@ public class WorkerInitialize extends SwingWorker<ServicesParam, Object> {
 
     Dictionary dict;
     if (config.getDictionary().toLowerCase().endsWith(".ld2")) {
-      dict = new DictionaryLingoesLd2(dictionaryFile, config.getDictionaryLanguage());
+      dict = new DictionaryLingoesLd2(dictionaryFile, config);
     } else {
-      dict = new DictionaryJiji(dictionaryFile);
+      dict = new DictionaryJiji(dictionaryFile, config);
     }
 
     // Initialize parser

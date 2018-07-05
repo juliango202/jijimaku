@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
+import jijimaku.AppConfig;
 import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.services.LanguageService;
 import jijimaku.services.LanguageService.Language;
@@ -59,7 +60,7 @@ public class DictionaryJiji implements Dictionary {
   }
 
   @SuppressWarnings("unchecked")
-  public DictionaryJiji(File jijiDictFile) {
+  public DictionaryJiji(File jijiDictFile, AppConfig config) {
     try {
       Yaml yaml = new Yaml();
       String yamlStr = FileManager.fileAnyEncodingToString(jijiDictFile);
@@ -84,6 +85,7 @@ public class DictionaryJiji implements Dictionary {
           LOGGER.error("Jiji dictionary entry {} has no sense defined.", key);
           return;
         }
+        senses = cleanupSenses(senses, config.getDictionaryCleanupRegexp());
 
         List<String> pronunciations = null;
         if (entryMap.containsKey(PRONUNCIATION_KEY)) {

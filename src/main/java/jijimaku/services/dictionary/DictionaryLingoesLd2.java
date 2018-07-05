@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import jijimaku.AppConfig;
 import jijimaku.errors.UnexpectedCriticalError;
 import jijimaku.services.LanguageService;
 import jijimaku.services.LanguageService.Language;
@@ -26,14 +27,10 @@ public class DictionaryLingoesLd2 implements Dictionary {
     LOGGER = LogManager.getLogger();
   }
 
-  private static final List<String> CLEANUP_RE = Arrays.asList(
-      "【例】.*"  // Remove example sentences in Japanese dictionaries
-  );
-
   private String title;
   private Language languageFrom;
 
-  public DictionaryLingoesLd2(File dictFile, String dictLanguageConfig) {
+  public DictionaryLingoesLd2(File dictFile, AppConfig config) {
     Map<String,String> definitions;
     try {
       title = dictFile.getName();
@@ -51,7 +48,7 @@ public class DictionaryLingoesLd2 implements Dictionary {
       lemma = lemma.replaceAll("^,|,$", "");
 
       if (lemma.contains(",") || lemma.contains(";")) {
-        LOGGER.error("Lemma {} contains a comma", lemma);
+        LOGGER.debug("Lemma {} contains a comma, it will be ignored", lemma);
         continue;
       }
 
@@ -64,18 +61,13 @@ public class DictionaryLingoesLd2 implements Dictionary {
         value = definitions.get(value);
       }
 
-      // Cleanup ld2 dictionary value
-      for (String re : CLEANUP_RE) {
-        value = value.replaceAll(re, "");
-      }
-
       List<String> lemmas = Arrays.asList(lemma);
-      List<String> senses = Arrays.asList(value);
+      List<String> senses = cleanupSenses(Arrays.asList(value), config.getDictionaryCleanupRegexp());
       DictionaryEntry dictEntry = new DictionaryEntry(lemmas, senses, null, null);
       entriesByLemma.get(lemma).add(dictEntry);
     }
 
-    languageFrom = detectLanguage(dictLanguageConfig, dictFile.getName(), definitions);
+    languageFrom = detectLanguage(config.getDictionaryLanguage(), dictFile.getName(), definitions);
     if (languageFrom == null) {
       LOGGER.error("Cannot detect language of LD2 dictionary {}, please use the "
           + "'dictionaryLanguage' config option set to a correct language", dictFile.getAbsolutePath());
@@ -91,6 +83,8 @@ public class DictionaryLingoesLd2 implements Dictionary {
     if (dictLanguageConfig != null && !dictLanguageConfig.isEmpty()) {
       detected = LanguageService.getLanguageFromStr(dictLanguageConfig);
     }
+
+    LOGGER.info("Config value dictionaryLanguage is missing, will try to detect LD2 dictionary language...");
 
     // Detect dictionary language from file name
     if (detected == null) {
