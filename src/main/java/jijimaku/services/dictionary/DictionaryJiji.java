@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,10 +67,12 @@ public class DictionaryJiji implements Dictionary {
       Yaml yaml = new Yaml();
       String yamlStr = FileManager.fileAnyEncodingToString(jijiDictFile);
       Map<String, Object> yamlMap = (Map<String, Object>) yaml.load(yamlStr);
+
+      this.parseAboutThisDictionary(yamlMap.get(DICT_INFO_KEY));
+      LOGGER.info("Using {} dictionary '{}'", languageFrom, title);
+
       yamlMap.keySet().stream().forEach(key -> {
         if (key.equals(DICT_INFO_KEY)) {
-          this.parseAboutThisDictionary(yamlMap.get(key));
-          LOGGER.info("Using {} dictionary '{}'", languageFrom, title);
           return;
         }
 
@@ -85,7 +89,6 @@ public class DictionaryJiji implements Dictionary {
           LOGGER.error("Jiji dictionary entry {} has no sense defined.", key);
           return;
         }
-        senses = cleanupSenses(senses, config.getDictionaryCleanupRegexp());
 
         List<String> pronunciations = null;
         if (entryMap.containsKey(PRONUNCIATION_KEY)) {
@@ -93,24 +96,18 @@ public class DictionaryJiji implements Dictionary {
           pronunciations = Arrays.asList(pronunciationStr.split(PRONUNCIATIONS_SPLIT_RE));
         }
 
-        List<String> tags = null;
+        Set<String> tags = null;
         if (entryMap.containsKey(TAGS_KEY)) {
-          String pronunciationStr = ((String)entryMap.get(TAGS_KEY));
-          tags = Arrays.asList(pronunciationStr.split(TAGS_SPLIT_RE));
+          String tagStr = ((String)entryMap.get(TAGS_KEY));
+          tags = new HashSet<>(Arrays.asList(tagStr.split(TAGS_SPLIT_RE)));
         }
 
         // Create Jiji dictionary entry
         List<String> lemmas = Arrays.asList(key.split(LEMMAS_SPLIT_RE));
-        DictionaryEntry dictEntry = new DictionaryEntry(lemmas, senses, pronunciations, tags);
-
-        // Index entries by lemma
-        for (String lemma : lemmas) {
-          if (!entriesByLemma.containsKey(lemma)) {
-            entriesByLemma.put(lemma, new ArrayList<>());
-          }
-          entriesByLemma.get(lemma).add(dictEntry);
-        }
+        addEntry(lemmas, senses, pronunciations, tags, config);
       });
+
+      loadLanguageTags();
     } catch (IOException exc) {
       LOGGER.error("Problem reading jijiDictFile {}", jijiDictFile.getAbsolutePath());
       LOGGER.debug(exc);
@@ -124,6 +121,10 @@ public class DictionaryJiji implements Dictionary {
 
   public Language getLanguageFrom() {
     return languageFrom;
+  }
+
+  public Logger getLogger() {
+    return LOGGER;
   }
 }
 

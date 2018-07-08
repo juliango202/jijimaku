@@ -1,8 +1,7 @@
 package jijimaku.services.dictionary;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,31 +41,6 @@ public class DictionaryLingoesLd2 implements Dictionary {
       throw new UnexpectedCriticalError();
     }
 
-    for (Map.Entry<String, String> def : definitions.entrySet()) {
-      String lemma = def.getKey();
-      // Strip lemma from comma (happen in some dictionaries)
-      lemma = lemma.replaceAll("^,|,$", "");
-
-      if (lemma.contains(",") || lemma.contains(";")) {
-        LOGGER.debug("Lemma {} contains a comma, it will be ignored", lemma);
-        continue;
-      }
-
-      if (!entriesByLemma.containsKey(lemma)) {
-        entriesByLemma.put(lemma, new ArrayList<>());
-      }
-      String value = def.getValue();
-      // this is a reference to another entry
-      if (definitions.containsKey(value)) {
-        value = definitions.get(value);
-      }
-
-      List<String> lemmas = Arrays.asList(lemma);
-      List<String> senses = cleanupSenses(Arrays.asList(value), config.getDictionaryCleanupRegexp());
-      DictionaryEntry dictEntry = new DictionaryEntry(lemmas, senses, null, null);
-      entriesByLemma.get(lemma).add(dictEntry);
-    }
-
     languageFrom = detectLanguage(config.getDictionaryLanguage(), dictFile.getName(), definitions);
     if (languageFrom == null) {
       LOGGER.error("Cannot detect language of LD2 dictionary {}, please use the "
@@ -74,6 +48,27 @@ public class DictionaryLingoesLd2 implements Dictionary {
       throw new UnexpectedCriticalError();
     }
     LOGGER.info("Using {} dictionary '{}'", languageFrom, title);
+
+    for (Map.Entry<String, String> def : definitions.entrySet()) {
+      String lemma = def.getKey();
+      // Strip lemma from comma (happen in some LD2 dictionaries)
+      lemma = lemma.replaceAll("^,|,$", "");
+
+      if (lemma.contains(",") || lemma.contains(";")) {
+        LOGGER.debug("Lemma {} contains a comma, it will be ignored", lemma);
+        continue;
+      }
+
+      String value = def.getValue();
+      // this is a reference to another entry
+      if (definitions.containsKey(value)) {
+        value = definitions.get(value);
+      }
+
+      addEntry(Collections.singletonList(lemma), Collections.singletonList(value), null, null, config);
+    }
+
+    loadLanguageTags();
   }
 
   private Language detectLanguage(String dictLanguageConfig, String dictFileName, Map<String,String> definitions) {
@@ -110,5 +105,9 @@ public class DictionaryLingoesLd2 implements Dictionary {
 
   public Language getLanguageFrom() {
     return languageFrom;
+  }
+
+  public Logger getLogger() {
+    return LOGGER;
   }
 }

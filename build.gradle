@@ -62,6 +62,9 @@ applicationDistribution.from("lib/udpipe-1.2.0") {
 // Add config.yaml file  to the distribution package
 applicationDistribution.from("config.yaml") { into "" }
 
+// Add language tags files to the distribution package
+applicationDistribution.from("language-tags") { into "language-tags" }
+
 // Exclude the Japanese kuromoji parser because we want to provide it as a separate file
 // NOTE: it seems applicationDistribution.exclude(...) does not work in gradle 4.5.1
 distributions {

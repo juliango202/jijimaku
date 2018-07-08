@@ -1,7 +1,9 @@
 package jijimaku.services.dictionary;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -26,10 +28,11 @@ public class DictionaryEntry {
   private final List<String> lemmas;
   private final List<String> senses;
   private final List<String> pronunciations;
-  private final List<String> tags;
   private final Integer frequency;
 
-  public DictionaryEntry(List<String> lemmas, List<String> senses, List<String> pronunciations, List<String> tags) {
+  private Set<String> tags;
+
+  public DictionaryEntry(List<String> lemmas, List<String> senses, List<String> pronunciations, Set<String> tags) {
     Objects.requireNonNull(lemmas, "lemmas should not be null");
     Objects.requireNonNull(senses, "senses should not be null");
     this.lemmas = lemmas;
@@ -39,7 +42,7 @@ public class DictionaryEntry {
     this.frequency = getFrequencyFromTags(tags);
   }
 
-  private Integer getFrequencyFromTags(List<String> tags) {
+  private Integer getFrequencyFromTags(Set<String> tags) {
     if (tags == null) {
       return null;
     }
@@ -68,12 +71,19 @@ public class DictionaryEntry {
     return pronunciations;
   }
 
-  public List<String> getTags() {
+  public Set<String> getTags() {
     return tags;
   }
 
   public Integer getFrequency() {
     return frequency;
+  }
+
+  public void addTag(String tag) {
+    if (tags == null) {
+      tags = new HashSet<>();
+    }
+    tags.add(tag);
   }
 
   // Overrides equals ans hashCode for proper use in collections
