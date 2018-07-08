@@ -90,6 +90,10 @@ public interface Dictionary {
    */
   default void loadLanguageTags() {
     String tagsDir = FileManager.getAppDirectory() + "/" + LANGUAGE_TAGS_DIR + getLanguageFrom().toString().toLowerCase();
+    if (!Files.exists(Paths.get(tagsDir))) {
+      getLogger().warn("No default language tags for language {}", getLanguageFrom().toString());
+      return;
+    }
     try {
       Files.list(Paths.get(tagsDir))
           .filter(s -> s.toString().endsWith(".txt"))

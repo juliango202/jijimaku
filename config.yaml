@@ -1,7 +1,8 @@
-# Name of the dictionary file used to source words definitions
+# Optional: Name of the dictionary file used to source words definitions
+# When not specified the program will use the first valid dictionary file it finds
 # The dictionary can be either in JIJI format => https://github.com/juliango202/jiji
 # Or a Lingoes LD2 dictionary => http://www.lingoes.net/en/dictionary/
-dictionary: jmdict_english.jiji.yaml
+#dictionary: jmdict_english.jiji.yaml
 
 # Optional: Source language of the dictionary
 # This can be used for LD2 dictionaries if language detection fails
