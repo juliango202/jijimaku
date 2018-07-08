@@ -8,6 +8,7 @@ plugins {
   id 'application'
   id 'checkstyle'
   id "org.sonarqube" version "2.5"
+  id "de.undercouch.download" version "3.4.3"
 }
 
 // Set the class that should be executed as the application entry point
@@ -48,6 +49,47 @@ dependencies {
 task wrapper(type: Wrapper) {
   gradleVersion = '4.5.1'
 }
+
+// This task is slowing things done EVEN when disabled(gradle/plugin bug?), for now just comment it
+// UNCOMMENT and execute it to download stopwords lists locally
+//task downloadStopwords {
+//  List languages = [
+//    "arabic",
+//    "bulgarian",
+//    "catalan",
+//    "czech",
+//    "danish",
+//    "dutch",
+//    "english",
+//    "finnish",
+//    "french",
+//    "german",
+//    "hindi",
+//    "hungarian",
+//    "indonesian",
+//    "italian",
+//    "norwegian",
+//    "polish",
+//    "portuguese",
+//    "romanian",
+//    "russian",
+//    "slovak",
+//    "spanish",
+//    "swedish",
+//    "turkish",
+//    "ukrainian",
+//    "vietnamese"
+//  ]
+//
+//  languages.each {
+//    String language = it
+//    download {
+//      src 'https://github.com/Alir3z4/stop-words/raw/master/' + language + '.txt'
+//      dest 'language-tags/' + language + '/stopword.txt'
+//      onlyIfModified true
+//    }
+//  }
+//}
 
 
 // Configure distribution package ----------------------

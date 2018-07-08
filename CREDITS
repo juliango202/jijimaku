@@ -6,3 +6,4 @@ It uses the following open-source libraries/tools:
 - Kuromoji Japanese language parser by Atilika https://github.com/atilika/kuromoji, Apache 2.0 licence 
 - Jim's Breen Japanese dictionary http://www.edrdg.org/edrdg/licence.html Creative Commons Attribution-ShareAlike Licence
 - Lingoes LD2 dictionary extractor by Xiaoyun Zhu, MIT licence
+- List of stopwords by language by Alir3z4 https://github.com/Alir3z4/stop-words, CC BY 4.0

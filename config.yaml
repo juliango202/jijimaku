@@ -46,17 +46,16 @@ partOfSpeechToAnnotate:
 displayOtherLemma: false
 
 # Ignore words if they have a specific tag in the dictionary
-# Entries in a jiji dictionary can be tagged, for example the tags freq01 to freq12 can be
-# used to represent the frequency of the entry
+# Entries in a jiji dictionary can be tagged, and for all dictionaries there is also a list of default tags by language in the language-tags/ directory.
+# For example the tags freq01 to freq12 are used to represent the frequency of the entry
 # If you expect to already understand frequent words, you can put freq01, freq02, ... in the list below
 # and the definition for those words won't be displayed
 # NOTE: be conservative because frequency information is often missing and not always reliable
-# Currently Japanese language tags are: kana-expr, freq01->freq12, jlpt1->jlpt5, and nfXX tags copied from JMdict
-# kana-expr is for expressions made of successive hiragana tokens, they are usually grammar constructs that can be ignored.
+# Japanese tags when using JMdict are: kana-expr, freq01->freq12, jlpt1->jlpt5, and nfXX tags (copied from JMdict)
 ignoreTags:
-- freq01
-- freq02
-- kana-expr
+- freq01  # Ignore the ~400 most common words of the language (when the info is available in language-tags/ files)
+- freq02  # Ignore the next ~600 most common words
+- kana-expr   # (Japanese language only) kana-expr is for expressions made of successive hiragana tokens, they are usually grammar constructs that can be ignored.
 
 # Ignore words in the list below
 # You can put here the list of words that you don't want defined because you already know them
