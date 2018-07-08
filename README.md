@@ -1,7 +1,5 @@
 Jijimaku is a Java application for inserting dictionary definitions inside video subtitle files(*.srt, *.ass). It's a tool for people who want to improve their foreign language skill by watching videos.
 
-**Currently in beta, only Japanese subtitles are supported.**
-
 ![Snap 1](https://juliango202.github.io/img/jijimaku/snap1.jpg)
 
 ## Installation
@@ -34,5 +32,3 @@ Once installed, see config.yaml for more information on these options.
 
 ## TODO:
 - video player plugin(VLC/mpv.io lua script?) that let you select among the defined words those you already know(by pressing a key) and add them automatically to the ignoreWords list. This would allow Jijimaku to match precisely a user true level after a few weeks of usage.
-- lemmatizer library for other languages support: https://bitbucket.org/hlavki/jlemmagen/.
-  Word list in google syntaxnet models could help
