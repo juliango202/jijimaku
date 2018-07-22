@@ -31,4 +31,5 @@ Currently two options are offered for this:
 Once installed, see config.yaml for more information on these options.
 
 ## TODO:
+- use custom Korean parser(https://bitbucket.org/eunjeon/seunjeon or https://github.com/open-korean-text/open-korean-text?) because udpipe results seem off for Korean
 - video player plugin(VLC/mpv.io lua script?) that let you select among the defined words those you already know(by pressing a key) and add them automatically to the ignoreWords list. This would allow Jijimaku to match precisely a user true level after a few weeks of usage.
