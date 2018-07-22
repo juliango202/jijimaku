@@ -44,6 +44,7 @@ dependencies {
 
   // No Maven package available, import via jitpack.io
   compile 'com.github.JDaren:subtitleConverter:-SNAPSHOT'
+  implementation 'com.github.juliango202:lingoes-extractor:5377418dcac4fbdd58b2c1616e0e0c359cac5d4e'
 }
 
 task wrapper(type: Wrapper) {
