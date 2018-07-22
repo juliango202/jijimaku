@@ -15,7 +15,7 @@ plugins {
 mainClassName = "jijimaku.AppMain"
 
 // Set project version, this will be part of the generated distributions filenames
-project.version = '1.0'
+project.version = '1.05'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
