@@ -106,23 +106,23 @@ public class AnnotationService {
     }
     String ws = langParser.getWordSeparator();
 
-    // Search the actual text form first
-    String textForm = tokens.stream().map(tt -> tt.getTextForm().toLowerCase()).collect(Collectors.joining(ws));
-    List<DictionaryEntry> entries = dict.search(textForm);
-    if (!entries.isEmpty()) {
-      return new DictionaryMatch(tokens, entries, ws);
-    }
-
-    // If there is no entry for the text form, search the first canonical form
+    // If there is no entry search for the actual text form
     String firstCanonicalForm = tokens.stream().map(TextToken::getFirstCanonicalForm).collect(Collectors.joining(ws));
-    entries = dict.search(firstCanonicalForm);
+    List<DictionaryEntry> entries = dict.search(firstCanonicalForm);
     if (!entries.isEmpty()) {
       return new DictionaryMatch(tokens, entries, ws);
     }
 
-    // If still no entry, search the second canonical form
+    // If there is no entry, search the second canonical form
     String secondCanonicalForm = tokens.stream().map(TextToken::getSecondCanonicalForm).collect(Collectors.joining(ws));
     entries = dict.search(secondCanonicalForm);
+    if (!entries.isEmpty()) {
+      return new DictionaryMatch(tokens, entries, ws);
+    }
+
+    // If still no entry, search for the actual text form
+    String textForm = tokens.stream().map(tt -> tt.getTextForm().toLowerCase()).collect(Collectors.joining(ws));
+    entries = dict.search(textForm);
     if (!entries.isEmpty()) {
       return new DictionaryMatch(tokens, entries, ws);
     }
